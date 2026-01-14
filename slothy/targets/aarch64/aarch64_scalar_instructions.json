@@ -1,0 +1,2025 @@
+{
+  "instructions": [
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_S",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "s_ldr",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "ldr <Sa>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_S",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "s_ldr_with_inc",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "ldr <Sa>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldr_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "s_ldr_with_inc_writeback",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "ldr <Sa>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldr_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "s_ldr_with_postinc",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "ldr <Sa>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 1
+      },
+      "base": "Str_S",
+      "inputs": [
+        "Sa",
+        "Xc"
+      ],
+      "name": "s_str",
+      "pattern": "str <Sa>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 1
+      },
+      "base": "Str_S",
+      "inputs": [
+        "Sa",
+        "Xc"
+      ],
+      "name": "s_str_with_inc",
+      "pattern": "str <Sa>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Str_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Sa"
+      ],
+      "name": "s_str_with_inc_writeback",
+      "pattern": "str <Sa>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Str_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Sa"
+      ],
+      "name": "s_str_with_postinc",
+      "pattern": "str <Sa>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_S",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "s_ldp",
+      "outputs": [
+        "Sa",
+        "Sb"
+      ],
+      "pattern": "ldp <Sa>, <Sb>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_S",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "s_ldp_with_inc",
+      "outputs": [
+        "Sa",
+        "Sb"
+      ],
+      "pattern": "ldp <Sa>, <Sb>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldp_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "s_ldp_with_inc_writeback",
+      "outputs": [
+        "Sa",
+        "Sb"
+      ],
+      "pattern": "ldp <Sa>, <Sb>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldp_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "s_ldp_with_postinc",
+      "outputs": [
+        "Sa",
+        "Sb"
+      ],
+      "pattern": "ldp <Sa>, <Sb>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 2
+      },
+      "base": "Stp_S",
+      "inputs": [
+        "Sa",
+        "Sb",
+        "Xc"
+      ],
+      "name": "s_stp",
+      "pattern": "stp <Sa>, <Sb>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 2
+      },
+      "base": "Stp_S",
+      "inputs": [
+        "Sa",
+        "Sb",
+        "Xc"
+      ],
+      "name": "s_stp_with_inc",
+      "pattern": "stp <Sa>, <Sb>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Stp_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Sa",
+        "Sb"
+      ],
+      "name": "s_stp_with_inc_writeback",
+      "pattern": "stp <Sa>, <Sb>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Stp_S",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Sa",
+        "Sb"
+      ],
+      "name": "s_stp_with_postinc",
+      "pattern": "stp <Sa>, <Sb>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "base": "Sfma",
+      "inputs": [
+        "Sb",
+        "Sc",
+        "Sd"
+      ],
+      "name": "sfmadd",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fmadd <Sa>, <Sb>, <Sc>, <Sd>"
+    },
+    {
+      "base": "Sfma",
+      "inputs": [
+        "Sb",
+        "Sc",
+        "Sd"
+      ],
+      "name": "sfmsub",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fmsub <Sa>, <Sb>, <Sc>, <Sd>"
+    },
+    {
+      "base": "Sfma",
+      "inputs": [
+        "Sb",
+        "Sc",
+        "Sd"
+      ],
+      "name": "sfnmadd",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fnmadd <Sa>, <Sb>, <Sc>, <Sd>"
+    },
+    {
+      "base": "Sfma",
+      "inputs": [
+        "Sb",
+        "Sc",
+        "Sd"
+      ],
+      "name": "sfnmsub",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fnmsub <Sa>, <Sb>, <Sc>, <Sd>"
+    },
+    {
+      "base": "Smul",
+      "inputs": [
+        "Sb",
+        "Sc"
+      ],
+      "name": "sfmul",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fmul <Sa>, <Sb>, <Sc>"
+    },
+    {
+      "base": "Smul",
+      "inputs": [
+        "Sb",
+        "Sc"
+      ],
+      "name": "sfnmul",
+      "outputs": [
+        "Sa"
+      ],
+      "pattern": "fnmul <Sa>, <Sb>, <Sc>"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_D",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "d_ldr",
+      "outputs": [
+        "Da"
+      ],
+      "pattern": "ldr <Da>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldr_D",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "d_ldr_with_postinc",
+      "outputs": [
+        "Da"
+      ],
+      "pattern": "ldr <Da>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldr_D",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "d_ldr_with_inc_writeback",
+      "outputs": [
+        "Da"
+      ],
+      "pattern": "ldr <Da>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldr_Q",
+      "name": "d_ldp_sp_imm",
+      "outputs": [
+        "Da",
+        "Db"
+      ],
+      "pattern": "ldp <Da>, <Db>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldr_D",
+      "name": "d_ldr_stack_with_inc",
+      "outputs": [
+        "Da"
+      ],
+      "pattern": "ldr <Da>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Da"
+      ],
+      "name": "d_str_stack_with_inc",
+      "pattern": "str <Da>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Da",
+        "Db"
+      ],
+      "name": "d_stp_stack_with_inc",
+      "pattern": "stp <Da>, <Db>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "x_ldr",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "x_ldr_with_imm",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "x_ldr_with_imm_uxtw",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ldr <Xd>, [<Xa>, <Xb>, UXTW <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "x_ldr_with_imm_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ldr <Xd>, [<Xa>, <Xb>, <barrel> <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xb",
+        "Xc"
+      ],
+      "name": "x_ldr_regidx",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [<Xb>, <Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "x_ldr_with_postinc",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldr_X",
+      "name": "x_ldr_stack",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [sp]"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldr_X",
+      "name": "x_ldr_stack_imm",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldr <Xa>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Th"
+      ],
+      "name": "x_ldr_stack_imm_with_hint",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldrh <Xa>, sp, <imm>, <Th>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldr_X",
+      "inputs": [
+        "Xb",
+        "Th"
+      ],
+      "name": "x_ldr_imm_with_hint",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldrh <Xa>, <Xb>, <imm>, <Th>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "x_ldp",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [<Xc>]"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldp_X",
+      "name": "x_ldp_with_imm_sp_xzr",
+      "outputs": [
+        "Xa"
+      ],
+      "pattern": "ldp <Xa>, xzr, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldp_X",
+      "name": "x_ldp_with_imm_sp",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [sp, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldp_X",
+      "name": "x_ldp_with_sp",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [sp]"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Xc"
+      ],
+      "name": "x_ldp_with_inc",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [<Xc>, <imm>]",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "x_ldp_with_inc_writeback",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [<Xc>, <imm>]!",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "in_outs": [
+        "Xc"
+      ],
+      "name": "x_ldp_with_postinc_writeback",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldp <Xa>, <Xb>, [<Xc>], <imm>",
+      "set_increment_from_immediate": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Xc",
+        "Th"
+      ],
+      "name": "x_ldp_with_imm_hint",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldph <Xa>, <Xb>, <Xc>, <imm>, <Th>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Th"
+      ],
+      "name": "x_ldp_sp_with_imm_hint",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldph <Xa>, <Xb>, sp, <imm>, <Th>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Th0",
+        "Th1"
+      ],
+      "name": "x_ldp_sp_with_imm_hint2",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldphp <Xa>, <Xb>, sp, <imm>, <Th0>, <Th1>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "base": "Ldp_X",
+      "inputs": [
+        "Xc",
+        "Th0",
+        "Th1"
+      ],
+      "name": "x_ldp_with_imm_hint2",
+      "outputs": [
+        "Xa",
+        "Xb"
+      ],
+      "pattern": "ldphp <Xa>, <Xb>, <Xc>, <imm>, <Th0>, <Th1>",
+      "pre_index_from_immediate": "True",
+      "restore_immediate_from_pre_index": "True"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Xa",
+        "Wb"
+      ],
+      "name": "ldr_sxtw_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "ldr <Wd>, [<Xa>, <Wb>, SXTW <imm>]"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "lsr_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "lsr <Wd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa"
+      ],
+      "name": "asr_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "asr <Wd>, <Wa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Wa"
+      ],
+      "modifiesFlags": "True",
+      "name": "subs_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "subs <Wd>, <Wa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "subs_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "subs <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "sub_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sub <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "add_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "name": "add_sp_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, sp, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "neg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "neg <Xd>, <Xa>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "negs",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "negs <Xd>, <Xa>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [],
+      "name": "ngc_zero",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ngc <Xd>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ngcs",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ngcs <Xd>, <Xa>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [],
+      "modifiesFlags": "True",
+      "name": "ngcs_zero",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ngcs <Xd>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "adds",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adds <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adds_to_zero",
+      "outputs": [],
+      "pattern": "adds xzr, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "adds_imm_to_zero",
+      "outputs": [],
+      "pattern": "adds xzr, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "subs_twoarg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "subs <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adds_twoarg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adds <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adcs",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adcs <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "sbcs",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sbcs <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "sbcs_zero",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sbcs <Xd>, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "sbcs_to_zero",
+      "outputs": [],
+      "pattern": "sbcs xzr, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "sbcs_zero_to_zero",
+      "outputs": [],
+      "pattern": "sbcs xzr, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "sbc",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sbc <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "sbc_zero_r",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sbc <Xd>, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "adcs_zero_r",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adcs <Xd>, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adcs_zero_l",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adcs <Xd>, xzr, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [],
+      "modifiesFlags": "True",
+      "name": "adcs_zero2",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adcs <Xd>, xzr, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adcs_to_zero",
+      "outputs": [],
+      "pattern": "adcs xzr, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "adcs_zero_r_to_zero",
+      "outputs": [],
+      "pattern": "adcs xzr, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "adc",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adc <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [],
+      "name": "adc_zero2",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adc <Xd>, xzr, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "adc_zero_r",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adc <Xd>, <Xa>, xzr"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "adc_zero_l",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adc <Xd>, xzr, <Xa>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "add",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "add2",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, <Xa>, <Xb>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Wa"
+      ],
+      "name": "add_w_imm",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "add <Wd>, <Wa>, <imm>"
+    },
+    {
+      "base": "AArch64BasicArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "sub",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sub <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64ShiftedArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "eor_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "eor <Xd>, <Xa>, <Xb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64ShiftedArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "bic_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "bic <Xd>, <Xa>, <Xb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64ShiftedArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "add_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, <Xa>, <Xb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64ShiftedArithmetic",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "adds_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "adds <Xd>, <Xa>, <Xb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64ShiftedArithmetic",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "add_imm_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "add <Xd>, <Xa>, <imm0>, <barrel> <imm1>"
+    },
+    {
+      "base": "AArch64Shift",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "lsr",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "lsr <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Shift",
+      "inputs": [
+        "Xa",
+        "Xc"
+      ],
+      "name": "lsr_variable",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "lsr <Xd>, <Xa>, <Xc>"
+    },
+    {
+      "base": "AArch64Shift",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "lsl",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "lsl <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Shift",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "ror",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ror <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Shift",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "asr",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "asr <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Wa"
+      ],
+      "name": "rev_w",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "rev <Wd>, <Wa>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "eor_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "eor <Wd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "eon_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "eon <Wd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "eor",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "eor <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "eon",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "eon <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "orr",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "orr <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "orr_w",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "orr <Wd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "in_outs": [
+        "Xd"
+      ],
+      "inputs": [
+        "Xa"
+      ],
+      "name": "bfi",
+      "pattern": "bfi <Xd>, <Xa>, <imm0>, <imm1>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "and_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "and <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ands_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ands <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ands_xzr_imm",
+      "outputs": [],
+      "pattern": "ands xzr, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "and_twoarg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "and <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "bic",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "bic <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "bic_reg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "bic <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "orr_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "orr <Xd>, <Xa>, <imm>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "sbfx",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "sbfx <Xd>, <Xa>, <imm0>, <imm1>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "ubfx",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ubfx <Xd>, <Xa>, <imm0>, <imm1>"
+    },
+    {
+      "base": "AArch64Logical",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "extr",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "extr <Xd>, <Xa>, <Xb>, <imm>"
+    },
+    {
+      "base": "AArch64LogicalShifted",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "orr_shifted",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "orr <Xd>, <Xa>, <Xb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64LogicalShifted",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "orr_shifted_w",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "and <Wd>, <Wa>, <Wb>, <barrel> <imm>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmp",
+      "pattern": "ccmp <Xa>, <Xb>, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmp_xzr",
+      "pattern": "ccmp xzr, <Xa>, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmp_xzr2",
+      "pattern": "ccmp <Xa>, xzr, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmn",
+      "pattern": "ccmn <Xa>, <Xb>, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmn_xzr",
+      "pattern": "ccmn xzr, <Xa>, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalCompare",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "ccmn_xzr2",
+      "pattern": "ccmn <Xa>, xzr, <imm>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe"
+      ],
+      "name": "cneg",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "cneg <Xd>, <Xe>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe"
+      ],
+      "name": "csel_xzr_ne",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "csel <Xd>, <Xe>, xzr, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe"
+      ],
+      "name": "csel_xzr2_ne",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "csel <Xd>, xzr, <Xe>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe",
+        "Xf"
+      ],
+      "name": "csel_ne",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "csel <Xd>, <Xe>, <Xf>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe"
+      ],
+      "name": "cinv",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "cinv <Xd>, <Xe>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "inputs": [
+        "Xe"
+      ],
+      "name": "cinc",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "cinc <Xd>, <Xe>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "name": "csetm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "csetm <Xd>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "dependsOnFlags": "True",
+      "name": "cset",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "cset <Xd>, <flag>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "inputs": [
+        "Xd",
+        "Xe"
+      ],
+      "modifiesFlags": "True",
+      "name": "cmn",
+      "pattern": "cmn <Xd>, <Xe>"
+    },
+    {
+      "base": "AArch64ConditionalSelect",
+      "inputs": [
+        "Xd"
+      ],
+      "modifiesFlags": "True",
+      "name": "cmn_imm",
+      "pattern": "cmn <Xd>, <imm>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [],
+      "name": "ldr_const",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "ldr <Xd>, <imm>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "in_outs": [
+        "Xd"
+      ],
+      "inputs": [],
+      "name": "movk_imm",
+      "pattern": "movk <Xd>, <imm>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa"
+      ],
+      "name": "mov",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "mov <Wd>, <Wa>"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [],
+      "name": "movz_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "movz <Xd>, <imm>"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [],
+      "name": "movz_imm_lsl",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "movz <Xd>, <imm0>, <barrel> <imm1>"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [],
+      "name": "mov_imm",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "mov <Xd>, <imm>"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [],
+      "name": "movw_imm",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "mov <Wd>, <imm>"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [],
+      "name": "mvn_xzr",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "mvn <Xd>, xzr"
+    },
+    {
+      "base": "AArch64Move",
+      "inputs": [
+        "Xa"
+      ],
+      "name": "mov_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "mov <Xd>, <Xa>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "umull_wform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "umull <Xd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa",
+        "Wb",
+        "Xacc"
+      ],
+      "name": "umaddl_wform",
+      "outputs": [
+        "Xn"
+      ],
+      "pattern": "umaddl <Xn>, <Wa>, <Wb>, <Xacc>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "name": "mul_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "mul <Wd>, <Wa>, <Wb>"
+    },
+    {
+      "base": "AArch64HighMultiply",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "umulh_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "umulh <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64HighMultiply",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "smulh_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "smulh <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Multiply",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "mul_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "mul <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Multiply",
+      "inputs": [
+        "Xacc",
+        "Xa",
+        "Xb"
+      ],
+      "name": "madd_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "madd <Xd>, <Xacc>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Multiply",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "name": "mneg_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "mneg <Xd>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Multiply",
+      "inputs": [
+        "Xacc",
+        "Xa",
+        "Xb"
+      ],
+      "name": "msub_xform",
+      "outputs": [
+        "Xd"
+      ],
+      "pattern": "msub <Xd>, <Xacc>, <Xa>, <Xb>"
+    },
+    {
+      "base": "AArch64Instruction",
+      "inputs": [
+        "Wa"
+      ],
+      "name": "and_imm_wform",
+      "outputs": [
+        "Wd"
+      ],
+      "pattern": "and <Wd>, <Wa>, <imm>"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Wa"
+      ],
+      "modifiesFlags": "True",
+      "name": "tst_wform",
+      "pattern": "tst <Wa>, <imm>"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "tst_imm_xform",
+      "pattern": "tst <Xa>, <imm>"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "tst_xform",
+      "pattern": "tst <Xa>, <Xb>"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "modifiesFlags": "True",
+      "name": "cmp",
+      "pattern": "cmp <Xa>, <Xb>"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "cmp_xzr",
+      "pattern": "cmp <Xa>, xzr"
+    },
+    {
+      "base": "Tst",
+      "inputs": [],
+      "modifiesFlags": "True",
+      "name": "cmp_xzr2",
+      "pattern": "cmp xzr, xzr"
+    },
+    {
+      "base": "Tst",
+      "inputs": [
+        "Xa"
+      ],
+      "modifiesFlags": "True",
+      "name": "cmp_imm",
+      "pattern": "cmp <Xa>, <imm>"
+    }
+  ]
+}
