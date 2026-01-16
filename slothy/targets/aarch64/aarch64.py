@@ -50,6 +50,10 @@ from slothy.targets.aarch64.aarch64_neon import (
     Ldp_X,
 )
 
+# These base classes are referenced indirectly via the JSON specification.
+_SCALAR_BASE_CLASSES = (Ldr_D, Ldr_Q, Ldr_X, Ldp_X)
+del _SCALAR_BASE_CLASSES
+
 
 class Ldr_S(AArch64Instruction):
     """Base class for scalar single-precision loads."""
@@ -221,30 +225,3 @@ for entry in INSTRUCTION_SPECS:
 
 
 __all__ = BASE_EXPORTS + GENERATED_EXPORTS
-
-
-for _cls in [
-    s_ldr,
-    s_ldr_with_inc,
-    s_ldr_with_inc_writeback,
-    s_ldr_with_postinc,
-    s_str,
-    s_str_with_inc,
-    s_str_with_inc_writeback,
-    s_str_with_postinc,
-    s_ldp,
-    s_ldp_with_inc,
-    s_ldp_with_inc_writeback,
-    s_ldp_with_postinc,
-    s_stp,
-    s_stp_with_inc,
-    s_stp_with_inc_writeback,
-    s_stp_with_postinc,
-    sfmadd,
-    sfmsub,
-    sfnmadd,
-    sfnmsub,
-    sfmul,
-    sfnmul,
-]:
-    _register_instruction(_cls)

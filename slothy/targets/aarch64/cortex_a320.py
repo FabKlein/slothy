@@ -74,8 +74,6 @@ from slothy.targets.aarch64.aarch64_neon import (
     vqdmulh_vector,
     vbic,
     vbic_imm_shifted,
-    q_ldr1_stack,
-    q_ldr1_post_inc,
     Vmull,
     Vmlal,
     vushr,
@@ -175,14 +173,6 @@ from slothy.targets.aarch64.aarch64 import (
     Str_S,
     Ldp_S,
     Stp_S,
-    s_ldp,
-    s_ldp_with_inc,
-    s_ldp_with_inc_writeback,
-    s_ldp_with_postinc,
-    s_stp,
-    s_stp_with_inc,
-    s_stp_with_inc_writeback,
-    s_stp_with_postinc,
     sfmadd,
     sfmsub,
     sfnmadd,
@@ -274,8 +264,6 @@ execution_units = {
         vqdmulh_vector,
         Ldr_Q,
         Str_Q,
-        q_ldr1_stack,
-        q_ldr1_post_inc,
         Q_Ld2_Lane_Post_Inc,
         Vmull,
         Vmlal,
@@ -286,9 +274,7 @@ execution_units = {
         VShiftImmediateRounding,
         AArch64NeonLogical,
         vuaddlv_sform,
-    ): [
-        [ExecutionUnit.VEC0]
-    ],  
+    ): [[ExecutionUnit.VEC0]],
     St4: [
         [
             ExecutionUnit.VEC0,
@@ -297,10 +283,7 @@ execution_units = {
         ]
         + ExecutionUnit.SCALAR()
     ],
-    Ld4: [
-        [ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD]
-        + ExecutionUnit.SCALAR()
-    ],
+    Ld4: [[ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD] + ExecutionUnit.SCALAR()],
     St3: [
         [
             ExecutionUnit.VEC0,
@@ -309,10 +292,7 @@ execution_units = {
         ]
         + ExecutionUnit.SCALAR()
     ],
-    Ld3: [
-        [ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD]
-        + ExecutionUnit.SCALAR()
-    ],
+    Ld3: [[ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD] + ExecutionUnit.SCALAR()],
     St2: [
         [
             ExecutionUnit.VEC0,
@@ -321,10 +301,7 @@ execution_units = {
         ]
         + ExecutionUnit.SCALAR()
     ],
-    Ld2: [
-        [ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD]
-        + ExecutionUnit.SCALAR()
-    ],
+    Ld2: [[ExecutionUnit.VEC0, ExecutionUnit.SCALAR_LOAD] + ExecutionUnit.SCALAR()],
     # non-q-form vector instructions
     (
         Ldr_D,
@@ -345,13 +322,12 @@ execution_units = {
         d_str_stack_with_inc,
         b_ldr_stack_with_inc,
         d_ldr_stack_with_inc,
-        q_ldr1_stack,
         Q_Ld2_Lane_Post_Inc,
         fmov_s_form,  # from double/single to gen reg
         Str_S,
     ): [
         ExecutionUnit.VEC0,
-    ],  
+    ],
     is_qform_form_of(vmov): [[ExecutionUnit.VEC0]],
     is_dform_form_of(vmov): [ExecutionUnit.VEC0],
     is_qform_form_of(trn1): [[ExecutionUnit.VEC0]],
@@ -390,9 +366,7 @@ execution_units = {
     is_dform_form_of(vmls): [ExecutionUnit.VEC0],
     vshl_d: [ExecutionUnit.VEC0],
     vuxtl: [[ExecutionUnit.VEC0]],
-    is_qform_form_of(AArch64NeonShiftInsert): [
-        [ExecutionUnit.VEC0]
-    ],
+    is_qform_form_of(AArch64NeonShiftInsert): [[ExecutionUnit.VEC0]],
     is_dform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0],
     (Stp_X, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
     (
@@ -527,7 +501,7 @@ inverse_throughput = {
     AArch64NeonLogical: 1,
     vext: 1,
     (vuzp1, vuzp2): 1,
-    (q_ldr1_stack, Q_Ld2_Lane_Post_Inc, q_ldr1_post_inc): 1,
+    (Q_Ld2_Lane_Post_Inc,): 1,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 1,
     (mov_d01, mov_b00): 1,
     (vzip1, vzip2): 1,
@@ -615,7 +589,7 @@ default_latencies = {
     AArch64NeonLogical: 1,
     vext: 2,
     (vuzp1, vuzp2): 2,
-    (q_ldr1_stack, Q_Ld2_Lane_Post_Inc, q_ldr1_post_inc): 3,
+    (Q_Ld2_Lane_Post_Inc,): 3,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 3,
     (mov_d01, mov_b00): 2,
     (vzip1, vzip2): 2,

@@ -62,7 +62,6 @@ from slothy.targets.aarch64.aarch64_neon import (
     vshrn,
     vusra,
     vmul,
-    Instruction,
     fcsel_dform,
     Q_Ld2_Lane_Post_Inc,
     vmla,
@@ -76,8 +75,6 @@ from slothy.targets.aarch64.aarch64_neon import (
     vqdmulh_vector,
     vbic,
     vbic_imm_shifted,
-    q_ldr1_stack,
-    q_ldr1_post_inc,
     Vmull,
     Vmlal,
     vushr,
@@ -177,14 +174,6 @@ from slothy.targets.aarch64.aarch64 import (
     Str_S,
     Ldp_S,
     Stp_S,
-    s_ldp,
-    s_ldp_with_inc,
-    s_ldp_with_inc_writeback,
-    s_ldp_with_postinc,
-    s_stp,
-    s_stp_with_inc,
-    s_stp_with_inc_writeback,
-    s_stp_with_postinc,
     sfmadd,
     sfmsub,
     sfnmadd,
@@ -207,9 +196,9 @@ class ExecutionUnit(Enum):
     SCALAR_STORE = 5
     VEC0 = 6
     VEC1 = 7
-    VECTOR_ST=8
-    VECTOR_LD0=9
-    VECTOR_LD1=10
+    VECTOR_ST = 8
+    VECTOR_LD0 = 9
+    VECTOR_LD1 = 10
 
     def __repr__(self):
         return self.name
@@ -236,13 +225,13 @@ def add_further_constraints(slothy):
 
 def add_slot_constraints(slothy):
     # Q-Form vector instructions are on slot 0 only
-    #slothy.restrict_slots_for_instructions_by_property(
-    #    Instruction.is_q_form_vector_instruction, [0]
-    #)
+    # slothy.restrict_slots_for_instructions_by_property(
+    #     Instruction.is_q_form_vector_instruction, [0]
+    # )
     # fcsel and vld2 on slot 0 only
-    #slothy.restrict_slots_for_instructions_by_class(
-    #    [fcsel_dform, Q_Ld2_Lane_Post_Inc], [0]
-    #)
+    # slothy.restrict_slots_for_instructions_by_class(
+    #     [fcsel_dform, Q_Ld2_Lane_Post_Inc], [0]
+    # )
     pass
 
 
@@ -280,10 +269,6 @@ execution_units = {
         vqrdmulh_lane,
         vqdmulh_lane,
         vqdmulh_vector,
-#        Ldr_Q,
-#        Str_Q,
-        q_ldr1_stack,
-        q_ldr1_post_inc,
         Q_Ld2_Lane_Post_Inc,
         Vmull,
         Vmlal,
@@ -294,21 +279,15 @@ execution_units = {
         VShiftImmediateRounding,
         AArch64NeonLogical,
         vuaddlv_sform,
-    ): [
-        ExecutionUnit.VEC0, ExecutionUnit.VEC1
-    ],  # these instructions use VEC0 or VEC1
-    (
-        Str_Q,
-    ): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
-    (
-        Ldr_Q,
-    ): [[ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]],
-    (
-        Stp_Q,
-    ): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
-    (
-        Ldp_Q,
-    ): [[ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]],
+    ): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
+    (Str_Q,): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
+    (Ldr_Q,): [
+        [ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]
+    ],
+    (Stp_Q,): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
+    (Ldp_Q,): [
+        [ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]
+    ],
     St4: [
         [
             ExecutionUnit.VEC0,
@@ -368,7 +347,6 @@ execution_units = {
         d_str_stack_with_inc,
         b_ldr_stack_with_inc,
         d_ldr_stack_with_inc,
-        q_ldr1_stack,
         Q_Ld2_Lane_Post_Inc,
         fmov_s_form,  # from double/single to gen reg
         Str_S,
@@ -414,9 +392,7 @@ execution_units = {
     is_dform_form_of(vmls): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     vshl_d: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     vuxtl: [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
-    is_qform_form_of(AArch64NeonShiftInsert): [
-        ExecutionUnit.VEC0, ExecutionUnit.VEC1
-    ],
+    is_qform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     (Stp_X, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
     (
@@ -551,7 +527,7 @@ inverse_throughput = {
     AArch64NeonLogical: 1,
     vext: 1,
     (vuzp1, vuzp2): 1,
-    (q_ldr1_stack, Q_Ld2_Lane_Post_Inc, q_ldr1_post_inc): 1,
+    (Q_Ld2_Lane_Post_Inc,): 1,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 1,
     (mov_d01, mov_b00): 1,
     (vzip1, vzip2): 1,
@@ -639,7 +615,7 @@ default_latencies = {
     AArch64NeonLogical: 1,
     vext: 2,
     (vuzp1, vuzp2): 2,
-    (q_ldr1_stack, Q_Ld2_Lane_Post_Inc, q_ldr1_post_inc): 3,
+    (Q_Ld2_Lane_Post_Inc,): 3,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 3,
     (mov_d01, mov_b00): 2,
     (vzip1, vzip2): 2,
@@ -705,7 +681,6 @@ def get_latency(src, out_idx, dst):
 def get_units(src):
     instclass_src = find_class(src)
     units = lookup_multidict(execution_units, src, instclass_src)
-    #print(src, instclass_src, units)
     if isinstance(units, list):
         return units
     return [units]

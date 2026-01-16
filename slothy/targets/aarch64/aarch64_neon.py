@@ -120,6 +120,10 @@ from unicorn.arm64_const import (
 from slothy.targets.common import FatalParsingException, UnknownInstruction
 from slothy.helper import Loop, SourceLine
 
+cmp = None  # Will be populated from scalar instruction module at import time.
+d_stp_stack_with_inc = None
+d_str_stack_with_inc = None
+
 arch_name = "Arm_AArch64"
 
 llvm_mca_arch = "aarch64"
@@ -876,6 +880,8 @@ class Instruction:
         instnames = []
 
         src = src_line.text.strip()
+        src = re.sub(r"{\s+", "{", src)
+        src = re.sub(r"\s+}", "}", src)
 
         # Iterate through all derived classes and call their parser
         # until one of them hopefully succeeds
@@ -1509,7 +1515,7 @@ class q_ld2_lane_post_inc_force_output(Q_Ld2_Lane_Post_Inc):
         return super().write()
 
 
-class q_ldr1_stack(AArch64Instruction):
+class q_ldr1_stack(Ldr_Q):
     pattern = "ld1r {<Va>.<dt>}, [sp]"
     # TODO: Model sp dependency
     outputs = ["Va"]
@@ -1522,11 +1528,8 @@ class q_ldr1_stack(AArch64Instruction):
         obj.addr = "sp"
         return obj
 
-    def write(self):
-        return super().write()
 
-
-class q_ldr1_post_inc(AArch64Instruction):
+class q_ldr1_post_inc(Ldr_Q):
     pattern = "ld1r {<Va>.<dt>}, [<Xa>], <imm>"
     outputs = ["Va"]
     in_outs = ["Xa"]
@@ -1536,10 +1539,8 @@ class q_ldr1_post_inc(AArch64Instruction):
         obj = AArch64Instruction.build(cls, src)
         obj.increment = obj.immediate
         obj.pre_index = None
+        obj.addr = obj.args_in_out[0]
         return obj
-
-    def write(self):
-        return super().write()
 
 
 class q_ldr_stack_with_inc(Ldr_Q):
@@ -1822,8 +1823,23 @@ class q_str_with_postinc(Str_Q):
         obj.addr = obj.args_in_out[0]
         return obj
 
+
 class q_st1_with_postinc(Str_Q):
     pattern = "st1 {<Va>.<dt>}, [<Xc>], <imm>"
+    in_outs = ["Xc"]
+    inputs = ["Va"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = obj.immediate
+        obj.pre_index = None
+        obj.addr = obj.args_in_out[0]
+        return obj
+
+
+class q_st1_lane_with_postinc(Str_Q):
+    pattern = "st1 {<Va>.<dt>}[<index>], [<Xc>], <imm>"
     in_outs = ["Xc"]
     inputs = ["Va"]
 
@@ -3793,4 +3809,4 @@ Instruction.all_subclass_leaves = all_subclass_leaves(Instruction)
 from slothy.targets.aarch64 import aarch64 as _aarch64_scalar  # noqa: E402,F401
 
 for _scalar_name in _aarch64_scalar.__all__:
-    globals().setdefault(_scalar_name, getattr(_aarch64_scalar, _scalar_name))
+    globals()[_scalar_name] = getattr(_aarch64_scalar, _scalar_name)
