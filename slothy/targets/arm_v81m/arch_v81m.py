@@ -342,6 +342,12 @@ class Instruction:
                 vstrw_with_post,
                 vstrw_scatter,
                 vstrw_scatter_uxtw,
+                vstm,
+                vstm_with_writeback,
+                vstm_with_post,
+                vldm,
+                vldm_with_writeback,
+                vldm_with_post,
                 vstrb,
                 vstrb_no_imm,
                 vstrb_with_writeback,
@@ -401,6 +407,9 @@ class Instruction:
                 vldrw_no_imm,
                 vldrw_with_writeback,
                 vldrw_with_post,
+                vldm,
+                vldm_with_writeback,
+                vldm_with_post,
                 vld20,
                 vld21,
                 vld20_with_writeback,
@@ -444,6 +453,9 @@ class Instruction:
                 vstrw_with_post,
                 vstrw_scatter,
                 vstrw_scatter_uxtw,
+                vstm,
+                vstm_with_writeback,
+                vstm_with_post,
                 vstrb,
                 vstrb_no_imm,
                 vstrb_with_writeback,
@@ -1421,6 +1433,12 @@ class vfma(MVEInstruction):
     in_outs = ["Qda"]
 
 
+class vfms(MVEInstruction):
+    pattern = "vfms.<fdt> <Qda>, <Qn>, <Qm>"
+    inputs = ["Qn", "Qm"]
+    in_outs = ["Qda"]
+
+
 class vmla(MVEInstruction):
     pattern = "vmla.<dt> <Qda>, <Qn>, <Rm>"
     inputs = ["Qn", "Rm"]
@@ -1603,6 +1621,371 @@ class vstrw_scatter_uxtw(MVEInstruction):
         obj.pre_index = None
         obj.addr = obj.args_in[1]
         return obj
+
+
+_VFP_SCALAR_TRANSFER_REGEX = re.compile(
+    r"^\s*(?P<mnemonic>vldm|vstm)(?:\.\w+)?\s+(?P<ptr>[^,]+?)\s*,\s*\{(?P<regs>[^\}]+)\}"
+    r"(?:\s*,\s*#(?P<imm>[^,\s]+))?\s*(//.*)?$",
+    re.IGNORECASE,
+)
+
+
+def _sanitize_vfp_pointer(token):
+    token = token.replace("%", "").strip()
+    if token.startswith("[") and token.endswith("]"):
+        token = token[1:-1].strip()
+    return token
+
+
+def _parse_vfp_scalar_name(token):
+    token = token.strip()
+    m = re.fullmatch(r"[sS](\d+)", token)
+    if m is None:
+        raise Instruction.ParsingException(f"Unsupported scalar register {token}")
+    return int(m.group(1))
+
+
+def _expand_vfp_scalar_registers(spec):
+    regs = []
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            bounds = [p.strip() for p in part.split("-", 1)]
+            if len(bounds) != 2:
+                raise Instruction.ParsingException(f"Malformed register list {part}")
+            start = _parse_vfp_scalar_name(bounds[0])
+            end = _parse_vfp_scalar_name(bounds[1])
+            if end < start:
+                raise Instruction.ParsingException(
+                    "v[ls]dm register ranges must be ascending"
+                )
+            regs.extend(range(start, end + 1))
+        else:
+            regs.append(_parse_vfp_scalar_name(part))
+    if not regs:
+        raise Instruction.ParsingException("Empty register list")
+    return regs
+
+
+def _extract_q_index_from_vector(name):
+    if not name:
+        return None
+    m = re.search(r"(\d+)", name)
+    if m is None:
+        return None
+    return int(m.group(1))
+
+
+def _reconstruct_scalar_regs(vec_name, lane_offsets, fallback):
+    q_index = _extract_q_index_from_vector(vec_name)
+    if q_index is None:
+        return fallback
+    base = q_index * 4
+    regs = [f"s{base + lane}" for lane in lane_offsets]
+    return ", ".join(regs)
+
+
+def _parse_vfp_scalar_transfer_operands(src, opcode, pointer_mode):
+    match = _VFP_SCALAR_TRANSFER_REGEX.match(src)
+    if match is None:
+        raise Instruction.ParsingException("Does not match VFP transfer pattern")
+    mnemonic = match.group("mnemonic").lower()
+    if mnemonic != opcode:
+        raise Instruction.ParsingException("Mnemonic mismatch for VFP transfer")
+    ptr_token = match.group("ptr").strip()
+    writeback = ptr_token.endswith("!")
+    if writeback:
+        ptr_token = ptr_token[:-1].rstrip()
+    ptr = _sanitize_vfp_pointer(ptr_token)
+    imm = match.group("imm")
+    mode = "post" if imm else ("writeback" if writeback else "plain")
+    if mode != pointer_mode:
+        raise Instruction.ParsingException("Addressing mode mismatch for VFP transfer")
+    scalars = _expand_vfp_scalar_registers(match.group("regs"))
+    q_indices = {reg // 4 for reg in scalars}
+    if len(q_indices) != 1:
+        raise Instruction.ParsingException(
+            "v[ls]dm register list must stay within a single Q register"
+        )
+    q_index = q_indices.pop()
+    lane_offsets = [reg % 4 for reg in scalars]
+    scalar_bytes = 4 * len(scalars)
+    regs_text = ", ".join(f"s{reg}" for reg in scalars)
+    return {
+        "pointer": ptr,
+        "lane_offsets": lane_offsets,
+        "scalar_bytes": scalar_bytes,
+        "vector_reg": f"q{q_index}",
+        "imm": f"#{imm}" if imm else None,
+        "regs_text": regs_text,
+    }
+
+
+def _format_pointer_components(pointer_mode, pointer, addr, scalar_bytes, immediate):
+    ptr = pointer or addr
+    if ptr is None:
+        raise FatalParsingException("Missing pointer register for VFP transfer")
+    if pointer_mode == "writeback":
+        return f"{ptr}!", None
+    if pointer_mode == "post":
+        return ptr, immediate or f"#{scalar_bytes}"
+    return ptr, None
+
+
+class _vstm_base(MVEInstruction):
+    """Helper base class for scalar-only VFP store instructions."""
+
+    pointer_mode = "plain"  # plain | writeback | post
+    _REGEX = re.compile(
+        r"^\s*vstm(?:\.\w+)?\s+(?P<ptr>[^,]+?)\s*,\s*\{(?P<regs>[^\}]+)\}"
+        r"(?:\s*,\s*#(?P<imm>[^,\s]+))?\s*(//.*)?$",
+        re.IGNORECASE,
+    )
+
+    def __init__(self):
+        pattern_map = {
+            "plain": "vstm <Qd>, [<Rn>]",
+            "writeback": "vstm <Qd>, [<Rn>]!",
+            "post": "vstm <Qd>, [<Rn>], <imm>",
+        }
+        inputs = ["Qd"]
+        in_outs = []
+        if self.pointer_mode == "plain":
+            inputs.append("Rn")
+        else:
+            in_outs = ["Rn"]
+        super().__init__(pattern_map[self.pointer_mode], inputs=inputs, in_outs=in_outs)
+        self._lane_offsets = []
+        self._orig_regs_text = ""
+        self._scalar_bytes = 0
+
+    @staticmethod
+    def _sanitize_pointer(token):
+        token = token.replace("%", "").strip()
+        if token.startswith("[") and token.endswith("]"):
+            token = token[1:-1].strip()
+        return token
+
+    @staticmethod
+    def _parse_scalar_name(token):
+        token = token.strip()
+        m = re.fullmatch(r"[sS](\d+)", token)
+        if m is None:
+            raise Instruction.ParsingException(f"Unsupported scalar register {token}")
+        return int(m.group(1))
+
+    @classmethod
+    def _expand_scalar_registers(cls, spec):
+        regs = []
+        for part in spec.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if "-" in part:
+                bounds = [p.strip() for p in part.split("-", 1)]
+                if len(bounds) != 2:
+                    raise Instruction.ParsingException(f"Malformed register list {part}")
+                start = cls._parse_scalar_name(bounds[0])
+                end = cls._parse_scalar_name(bounds[1])
+                if end < start:
+                    raise Instruction.ParsingException(
+                        "vstm register ranges must be ascending"
+                    )
+                regs.extend(range(start, end + 1))
+            else:
+                regs.append(cls._parse_scalar_name(part))
+        if not regs:
+            raise Instruction.ParsingException("Empty register list in vstm")
+        return regs
+
+    @staticmethod
+    def _extract_q_index(name):
+        m = re.search(r"(\d+)", name)
+        if m is None:
+            return None
+        return int(m.group(1))
+
+    @classmethod
+    def _parse_operands(cls, src):
+        match = cls._REGEX.match(src)
+        if match is None:
+            raise Instruction.ParsingException("Does not match vstm pattern")
+        ptr_token = match.group("ptr").strip()
+        writeback = ptr_token.endswith("!")
+        if writeback:
+            ptr_token = ptr_token[:-1].rstrip()
+        ptr = cls._sanitize_pointer(ptr_token)
+        imm = match.group("imm")
+        mode = "post" if imm else ("writeback" if writeback else "plain")
+        if mode != cls.pointer_mode:
+            raise Instruction.ParsingException("Addressing mode mismatch for vstm")
+        scalars = cls._expand_scalar_registers(match.group("regs"))
+        q_indices = {idx // 4 for idx in scalars}
+        if len(q_indices) != 1:
+            raise Instruction.ParsingException(
+                "vstm register list must stay within a single Q register"
+            )
+        q_index = q_indices.pop()
+        lane_offsets = [idx % 4 for idx in scalars]
+        scalar_bytes = 4 * len(scalars)
+        imm_txt = f"#{imm}" if imm else None
+        return {
+            "pointer": ptr,
+            "vector_reg": f"q{q_index}",
+            "lane_offsets": lane_offsets,
+            "scalar_bytes": scalar_bytes,
+            "imm": imm_txt,
+            "regs_text": ", ".join(f"s{idx}" for idx in scalars),
+        }
+
+    def _format_registers(self):
+        vec = self.args_in[0]
+        q_index = self._extract_q_index(vec)
+        if q_index is None:
+            return self._orig_regs_text
+        base = q_index * 4
+        regs = [f"s{base + lane}" for lane in self._lane_offsets]
+        return ", ".join(regs)
+
+    def _format_pointer(self):
+        if self.pointer_mode == "plain":
+            ptr = self.args_in[1] if len(self.args_in) > 1 else self.addr
+            suffix = None
+        else:
+            ptr = self.args_in_out[0] if self.args_in_out else self.addr
+            if self.pointer_mode == "writeback":
+                suffix = None
+            else:
+                suffix = self.immediate or f"#{self._scalar_bytes}"
+        if ptr is None:
+            raise FatalParsingException("vstm pointer argument missing")
+        if self.pointer_mode == "writeback":
+            return f"{ptr}!", None
+        return ptr, suffix
+
+    @classmethod
+    def make(cls, src):
+        parsed = _parse_vfp_scalar_transfer_operands(src, "vstm", cls.pointer_mode)
+        obj = cls()
+        obj._lane_offsets = parsed["lane_offsets"]
+        obj._scalar_bytes = parsed["scalar_bytes"]
+        obj._orig_regs_text = parsed["regs_text"]
+        obj.addr = parsed["pointer"]
+        if cls.pointer_mode == "plain":
+            obj.args_in = [parsed["vector_reg"], parsed["pointer"]]
+        else:
+            obj.args_in = [parsed["vector_reg"]]
+            obj.args_in_out = [parsed["pointer"]]
+            obj.increment = parsed["imm"] or f"#{parsed['scalar_bytes']}"
+        if cls.pointer_mode == "post":
+            obj.immediate = parsed["imm"] or f"#{parsed['scalar_bytes']}"
+        else:
+            obj.immediate = parsed["imm"]
+        return obj
+
+    def write(self):
+        pointer, suffix = self._format_pointer()
+        regs = self._format_registers()
+        if suffix:
+            return f"vstm {pointer}, {{{regs}}}, {suffix}"
+        return f"vstm {pointer}, {{{regs}}}"
+
+
+class vstm(_vstm_base):
+    pointer_mode = "plain"
+
+
+class vstm_with_writeback(_vstm_base):
+    pointer_mode = "writeback"
+
+
+class vstm_with_post(_vstm_base):
+    pointer_mode = "post"
+
+
+class _vldm_base(MVEInstruction):
+    """Helper base class for scalar-only VFP load instructions."""
+
+    pointer_mode = "plain"
+
+    def __init__(self):
+        pattern_map = {
+            "plain": "vldm <Qd>, [<Rn>]",
+            "writeback": "vldm <Qd>, [<Rn>]!",
+            "post": "vldm <Qd>, [<Rn>], <imm>",
+        }
+        outputs = ["Qd"]
+        inputs = []
+        in_outs = []
+        if self.pointer_mode == "plain":
+            inputs.append("Rn")
+        else:
+            in_outs = ["Rn"]
+        super().__init__(
+            pattern_map[self.pointer_mode],
+            inputs=inputs,
+            outputs=outputs,
+            in_outs=in_outs,
+        )
+        self._lane_offsets = []
+        self._orig_regs_text = ""
+        self._scalar_bytes = 0
+
+    def _format_registers(self):
+        vec = self.args_out[0] if self.args_out else None
+        return _reconstruct_scalar_regs(vec, self._lane_offsets, self._orig_regs_text)
+
+    def _format_pointer(self):
+        if self.pointer_mode == "plain":
+            ptr = self.args_in[0] if self.args_in else None
+        else:
+            ptr = self.args_in_out[0] if self.args_in_out else None
+        return _format_pointer_components(
+            self.pointer_mode, ptr, self.addr, self._scalar_bytes, self.immediate
+        )
+
+    @classmethod
+    def make(cls, src):
+        parsed = _parse_vfp_scalar_transfer_operands(src, "vldm", cls.pointer_mode)
+        obj = cls()
+        obj._lane_offsets = parsed["lane_offsets"]
+        obj._scalar_bytes = parsed["scalar_bytes"]
+        obj._orig_regs_text = parsed["regs_text"]
+        obj.addr = parsed["pointer"]
+        obj.increment = None
+        obj.args_out = [parsed["vector_reg"]]
+        if cls.pointer_mode == "plain":
+            obj.args_in = [parsed["pointer"]]
+        else:
+            obj.args_in_out = [parsed["pointer"]]
+            obj.increment = parsed["imm"] or f"#{parsed['scalar_bytes']}"
+        if cls.pointer_mode == "post":
+            obj.immediate = parsed["imm"] or f"#{parsed['scalar_bytes']}"
+        else:
+            obj.immediate = parsed["imm"]
+        return obj
+
+    def write(self):
+        pointer, suffix = self._format_pointer()
+        regs = self._format_registers()
+        mnemonic = self.mnemonic.split(" ")[0]
+        if suffix:
+            return f"{mnemonic} {pointer}, {{{regs}}}, {suffix}"
+        return f"{mnemonic} {pointer}, {{{regs}}}"
+
+
+class vldm(_vldm_base):
+    pointer_mode = "plain"
+
+
+class vldm_with_writeback(_vldm_base):
+    pointer_mode = "writeback"
+
+
+class vldm_with_post(_vldm_base):
+    pointer_mode = "post"
 
 
 class vstrb(MVEInstruction):

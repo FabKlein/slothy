@@ -196,9 +196,8 @@ class ExecutionUnit(Enum):
     SCALAR_STORE = 5
     VEC0 = 6
     VEC1 = 7
-    VECTOR_ST = 8
-    VECTOR_LD0 = 9
-    VECTOR_LD1 = 10
+    VECTOR_LD_ST = 8
+    VECTOR_LD = 9
 
     def __repr__(self):
         return self.name
@@ -219,8 +218,10 @@ class ExecutionUnit(Enum):
 def add_further_constraints(slothy):
     if slothy.config.constraints.functional_only:
         return
-    add_slot_constraints(slothy)
-    add_st_hazard(slothy)
+    #add_slot_constraints(slothy)
+    #add_st_hazard(slothy)
+    add_ld_hazard(slothy)
+    add_ld_st_hazard(slothy)
 
 
 def add_slot_constraints(slothy):
@@ -233,6 +234,27 @@ def add_slot_constraints(slothy):
     #     [fcsel_dform, Q_Ld2_Lane_Post_Inc], [0]
     # )
     pass
+
+
+def add_ld_hazard(slothy):
+    def is_vec_ld_ld_pair(inst_a, inst_b):
+        return inst_a.inst.is_vector_load() and inst_b.inst.is_vector_load()
+
+    for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_ld_pair):
+        if t0.is_locked and t1.is_locked:
+            continue
+        print(t0, t1)
+        slothy._Add(t0.cycle_start_var != t1.cycle_start_var + 2)
+
+def add_ld_st_hazard(slothy):
+    def is_vec_ld_st_pair(inst_a, inst_b):
+        return (inst_a.inst.is_vector_load() and inst_b.inst.is_vector_store()) or (inst_a.inst.is_vector_store() and inst_b.inst.is_vector_load())
+
+    for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_st_pair):
+        if t0.is_locked and t1.is_locked:
+            continue
+        print(t0, t1)
+        slothy._Add(t0.cycle_start_var != t1.cycle_start_var + 2)
 
 
 def add_st_hazard(slothy):
@@ -263,8 +285,8 @@ execution_units = {
     (
         vmla_lane,
         vmls_lane,
-        vmul,
-        vmul_lane,
+        #vmul,
+        #vmul_lane,
         vqrdmulh,
         vqrdmulh_lane,
         vqdmulh_lane,
@@ -280,13 +302,13 @@ execution_units = {
         AArch64NeonLogical,
         vuaddlv_sform,
     ): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
-    (Str_Q,): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
+    (Str_Q,): [ [ExecutionUnit.VEC0, ExecutionUnit.VECTOR_LD_ST]],
     (Ldr_Q,): [
-        [ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]
+        ExecutionUnit.VECTOR_LD, ExecutionUnit.VECTOR_LD_ST
     ],
-    (Stp_Q,): [[ExecutionUnit.VECTOR_ST, ExecutionUnit.VECTOR_LD0]],
+    (Stp_Q,): [[ExecutionUnit.VECTOR_LD_ST]],
     (Ldp_Q,): [
-        [ExecutionUnit.VECTOR_LD1, ExecutionUnit.VECTOR_LD0] + [ExecutionUnit.VECTOR_ST]
+        [ExecutionUnit.VECTOR_LD, ExecutionUnit.VECTOR_LD_ST]
     ],
     St4: [
         [
@@ -331,6 +353,22 @@ execution_units = {
     (
         Ldr_D,
         Ldr_S,
+        b_ldr_stack_with_inc,
+        d_ldr_stack_with_inc,
+        Q_Ld2_Lane_Post_Inc,
+    ): [
+        ExecutionUnit.VECTOR_LD,
+        ExecutionUnit.VECTOR_LD_ST,
+    ],  # these instructions use VEC0 or VEC1
+    (
+        d_stp_stack_with_inc,
+        d_str_stack_with_inc,
+        Str_S,
+    ): [
+        ExecutionUnit.VECTOR_LD_ST,
+    ],  # these instructions use VEC0 or VEC1
+
+    (
         sfmadd,
         sfmsub,
         sfnmadd,
@@ -343,13 +381,7 @@ execution_units = {
         fcsel_dform,
         VecToGprMov,
         Mov_xtov_d,
-        d_stp_stack_with_inc,
-        d_str_stack_with_inc,
-        b_ldr_stack_with_inc,
-        d_ldr_stack_with_inc,
-        Q_Ld2_Lane_Post_Inc,
         fmov_s_form,  # from double/single to gen reg
-        Str_S,
     ): [
         ExecutionUnit.VEC0,
         ExecutionUnit.VEC1,
@@ -386,6 +418,8 @@ execution_units = {
     is_dform_form_of(vushr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vsshr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vsshr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_qform_form_of(vmul): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_dform_form_of(vmul): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmla): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vmla): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmls): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
@@ -525,7 +559,7 @@ inverse_throughput = {
     AArch64NeonShiftInsert: 1,
     (vusra): 1,
     AArch64NeonLogical: 1,
-    vext: 1,
+    vext: 2,
     (vuzp1, vuzp2): 1,
     (Q_Ld2_Lane_Post_Inc,): 1,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 1,
@@ -561,7 +595,7 @@ default_latencies = {
         vmls_lane,
     ): 4,
     (Ldr_D, Ldr_S): 3,
-    (Ldr_Q, Ldp_Q, Str_Q, Stp_Q, Str_S): 4,
+    (Ldr_Q, Ldp_Q, Str_Q, Stp_Q, Str_S): 3,
     (sub_imm, cmp): 2,
     AArch64NeonCount: 2,
     St4: 5,
@@ -681,6 +715,7 @@ def get_latency(src, out_idx, dst):
 def get_units(src):
     instclass_src = find_class(src)
     units = lookup_multidict(execution_units, src, instclass_src)
+    #print(src, instclass_src, units, lookup_multidict(inverse_throughput, src, instclass_src), lookup_multidict(default_latencies, src, instclass_src))
     if isinstance(units, list):
         return units
     return [units]
@@ -688,4 +723,5 @@ def get_units(src):
 
 def get_inverse_throughput(src):
     instclass_src = find_class(src)
+    #print(src, instclass_src, lookup_multidict(inverse_throughput, src, instclass_src))
     return lookup_multidict(inverse_throughput, src, instclass_src)

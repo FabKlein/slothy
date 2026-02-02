@@ -99,6 +99,7 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vqdmulh_sv,
     vmla,
     vfma,
+    vfms,
     vmulf_T1,
     vmulf_T2,
     ldrd,
@@ -126,6 +127,9 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vldrw_no_imm,
     vldrw_with_writeback,
     vldrw_with_post,
+    vldm,
+    vldm_with_writeback,
+    vldm_with_post,
     vldrw_gather,
     vldrw_gather_uxtw,
     vldrb_gather,
@@ -150,6 +154,9 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vstrw_with_post,
     vstrw_scatter,
     vstrw_scatter_uxtw,
+    vstm,
+    vstm_with_writeback,
+    vstm_with_post,
     vstrb,
     vstrb_no_imm,
     vstrb_with_writeback,
@@ -351,7 +358,10 @@ execution_units = {
     vqdmulh_vv: ExecutionUnit.VEC_MUL,
     vqdmulh_sv: ExecutionUnit.VEC_MUL,
     vmla: ExecutionUnit.VEC_MUL,
-    vfma: [  # uses both MUL/ADD pipes
+    vfma: [
+        [ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]
+    ],
+    vfms: [
         [ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]
     ],
     vmulf_T1: ExecutionUnit.VEC_FPMUL,
@@ -385,6 +395,9 @@ execution_units = {
     vldrw_no_imm: ExecutionUnit.LOAD,
     vldrw_with_writeback: ExecutionUnit.LOAD,
     vldrw_with_post: ExecutionUnit.LOAD,
+    vldm: ExecutionUnit.LOAD,
+    vldm_with_writeback: ExecutionUnit.LOAD,
+    vldm_with_post: ExecutionUnit.LOAD,
     vldrw_gather: ExecutionUnit.LOAD,
     vldrw_gather_uxtw: ExecutionUnit.LOAD,
     vldrb_gather: ExecutionUnit.LOAD,
@@ -409,6 +422,9 @@ execution_units = {
     vstrw_with_post: ExecutionUnit.STORE,
     vstrw_scatter: ExecutionUnit.STORE,
     vstrw_scatter_uxtw: ExecutionUnit.STORE,
+    vstm: ExecutionUnit.STORE,
+    vstm_with_writeback: ExecutionUnit.STORE,
+    vstm_with_post: ExecutionUnit.STORE,
     vstrb: ExecutionUnit.STORE,
     vstrb_no_imm: ExecutionUnit.STORE,
     vstrb_with_writeback: ExecutionUnit.STORE,
@@ -526,6 +542,9 @@ inverse_throughput = {
         vstrw_with_post,
         vstrw_scatter,
         vstrw_scatter_uxtw,
+        vstm,
+        vstm_with_writeback,
+        vstm_with_post,
         vstrb,
         vstrb_no_imm,
         vstrb_with_writeback,
@@ -544,6 +563,9 @@ inverse_throughput = {
         vldrw_no_imm,
         vldrw_with_writeback,
         vldrw_with_post,
+        vldm,
+        vldm_with_writeback,
+        vldm_with_post,
         vldrw_gather,
         vldrw_gather_uxtw,
         vldrb_gather,
@@ -583,7 +605,7 @@ inverse_throughput = {
     ): 2,
     (vmulf_T1, vmulf_T2): 2,
     # MACs
-    (vfma, vcmla): 2,
+    (vfma, vfms, vcmla): 2,
 }
 
 default_latencies = {
@@ -609,7 +631,7 @@ default_latencies = {
         vshr,
         vshl,
         vshl_T3,
-        vshlc,
+        #vshlc,
         vrev16,
         vrev32,
         vrev64,
@@ -646,6 +668,9 @@ default_latencies = {
         vldrw_no_imm,
         vldrw_with_writeback,
         vldrw_with_post,
+        vldm,
+        vldm_with_writeback,
+        vldm_with_post,
         vldrw_gather,
         vldrw_gather_uxtw,
         vldrb_gather,
@@ -670,6 +695,9 @@ default_latencies = {
         vstrw_with_post,
         vstrw_scatter,
         vstrw_scatter_uxtw,
+        vstm,
+        vstm_with_writeback,
+        vstm_with_post,
         vstrb,
         vstrb_no_imm,
         vstrb_with_writeback,
@@ -681,6 +709,7 @@ default_latencies = {
         and_imm,
     ): 1,
     (
+        vshlc,
         vrshr,
         vrshl,
         vshrnb,
@@ -727,7 +756,7 @@ default_latencies = {
         vld42_with_writeback,
         vld43_with_writeback,
     ): 4,
-    (vfma, vcmla): 4,
+    (vfma, vfms, vcmla): 4,
 }
 
 
@@ -749,6 +778,9 @@ def get_latency(src, out_idx, dst):
         vstrw_with_post,
         vstrw_scatter,
         vstrw_scatter_uxtw,
+        vstm,
+        vstm_with_writeback,
+        vstm_with_post,
         vstrb,
         vstrb_no_imm,
         vstrb_with_writeback,
@@ -786,12 +818,15 @@ def get_latency(src, out_idx, dst):
         vstrw_with_post,
         vstrw_scatter,
         vstrw_scatter_uxtw,
+        vstm,
+        vstm_with_writeback,
+        vstm_with_post,
         vstrb,
         vstrb_no_imm,
         vstrb_with_writeback,
         vstrb_with_post,
         qsave,
-    ] and instclass_src in [vcmul, vcmla, vfma]:
+    ] and instclass_src in [vcmul, vcmla, vfma, vfms]:
         return 2
 
     if instclass_dst in [vld21, vld21_with_writeback] and instclass_src in [
@@ -869,6 +904,7 @@ def get_latency(src, out_idx, dst):
         vqdmlsdh,
         vmla,
         vfma,
+        vfms,
         vmulf_T1,
         vmulf_T2,
         vcmul,
