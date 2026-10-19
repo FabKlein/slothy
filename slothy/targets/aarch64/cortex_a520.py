@@ -58,10 +58,14 @@ from slothy.targets.aarch64.aarch64_neon import (
     Stp_Q,
     vmov,
     vadd,
+    vaddf,
     vxtn,
     vshrn,
     vusra,
     vmul,
+    vmulf,
+    vmulf_lane,
+    vfmla_lane,
     fcsel_dform,
     Q_Ld2_Lane_Post_Inc,
     vmla,
@@ -243,7 +247,7 @@ def add_ld_hazard(slothy):
     for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_ld_pair):
         if t0.is_locked and t1.is_locked:
             continue
-        print(t0, t1)
+        #print(t0, t1)
         slothy._Add(t0.cycle_start_var != t1.cycle_start_var + 2)
 
 def add_ld_st_hazard(slothy):
@@ -253,7 +257,7 @@ def add_ld_st_hazard(slothy):
     for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_st_pair):
         if t0.is_locked and t1.is_locked:
             continue
-        print(t0, t1)
+        #print(t0, t1)
         slothy._Add(t0.cycle_start_var != t1.cycle_start_var + 2)
 
 
@@ -281,6 +285,8 @@ def get_min_max_objective(slothy):
 
 
 execution_units = {
+    # FP by-element operations, matching the existing dual-vector-pipe model.
+    (vmulf_lane, vfmla_lane): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     # q-form vector instructions
     (
         vmla_lane,
@@ -410,6 +416,8 @@ execution_units = {
     is_dform_form_of(vsub): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vadd): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vadd): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_qform_form_of(vaddf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_dform_form_of(vaddf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vshl): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vshl): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vshrn): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
@@ -420,6 +428,8 @@ execution_units = {
     is_dform_form_of(vsshr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmul): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vmul): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_qform_form_of(vmulf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_dform_form_of(vmulf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmla): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vmla): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmls): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
@@ -489,11 +499,14 @@ execution_units = {
 }
 
 inverse_throughput = {
+    (vmulf_lane, vfmla_lane): 1,
     (
         vadd,
+        vaddf,
         vsub,
         vmov,
         vmul,
+        vmulf,
         vmul_lane,
         vqrdmulh,
         vqrdmulh_lane,
@@ -573,7 +586,9 @@ inverse_throughput = {
 }
 
 default_latencies = {
+    (vmulf_lane, vfmla_lane): 4,
     vmov: 2,
+    (vaddf, vmulf): 4,
     is_qform_form_of([vadd, vsub]): 3,
     is_dform_form_of([vadd, vsub]): 2,
     (trn1, trn2, ASimdCompare): 2,

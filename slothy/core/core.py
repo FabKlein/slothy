@@ -3385,8 +3385,15 @@ class SlothyBase(LockAttributes):
             return t0.orig_pos < t1.orig_pos
 
         if self.config.constraints.allow_reordering is False:
-            for t0, t1 in self.get_inst_pairs(cond=comes_before):
-                force_stays_before(t0, t1)
+            if self.config.sw_pipelining.enabled:
+                for t0, t1 in self.get_inst_pairs(cond=comes_before):
+                    force_stays_before(t0, t1)
+            else:
+                # Adjacent constraints imply the full original order. Avoid
+                # quadratic, redundant constraints when estimating long blocks.
+                nodes = self._get_nodes_by_program_order()
+                for t0, t1 in zip(nodes, nodes[1:]):
+                    force_stays_before(t0, t1)
         else:
             for t0, t1 in self.get_inst_pairs(
                 cond_fst=lambda t: t.is_locked,

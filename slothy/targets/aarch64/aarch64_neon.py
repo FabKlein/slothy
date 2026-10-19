@@ -1371,6 +1371,12 @@ class vadd(AArch64Instruction):
     outputs = ["Va"]
 
 
+class vaddf(AArch64Instruction):
+    pattern = "fadd <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>"
+    inputs = ["Vb", "Vc"]
+    outputs = ["Va"]
+
+
 class vsub(AArch64Instruction):
     pattern = "sub <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>"
     inputs = ["Vb", "Vc"]
@@ -1576,6 +1582,31 @@ class q_ldr_with_inc(Ldr_Q):
 
     def write(self):
         self.immediate = simplify(self.pre_index)
+        return super().write()
+
+
+class q_ldur(Ldr_Q):
+    """128-bit vector load with a signed, unscaled byte offset."""
+
+    pattern = "ldur <Qa>, [<Xc>, <imm>]"
+    inputs = ["Xc"]
+    outputs = ["Qa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        offset = simplify(obj.immediate)
+        if offset.is_number and not -256 <= int(offset) <= 255:
+            raise Instruction.ParsingException("LDUR offset must be in [-256, 255]")
+        obj.increment = None
+        obj.pre_index = obj.immediate
+        obj.addr = obj.args_in[0]
+        return obj
+
+    def write(self):
+        self.immediate = simplify(self.pre_index)
+        if self.immediate.is_number and not -256 <= int(self.immediate) <= 255:
+            raise Instruction.ParsingException("LDUR offset must be in [-256, 255]")
         return super().write()
 
 
@@ -2231,8 +2262,44 @@ class vmul(Vmul):
     outputs = ["Vd"]
 
 
-class vfmul(vmul):
+class vmulf(Vmul):
     pattern = "fmul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
+    inputs = ["Va", "Vb"]
+    outputs = ["Vd"]
+
+
+# Backwards-compatible name used by earlier versions of the AArch64 model.
+vfmul = vmulf
+
+
+def _check_fp_lane_operands(obj):
+    """Validate the arrangement and lane of an FP by-element instruction."""
+    arrangements = {
+        "4h": ("h", 8),
+        "8h": ("h", 8),
+        "2s": ("s", 4),
+        "4s": ("s", 4),
+        "2d": ("d", 2),
+    }
+    arrangement, element = obj.datatype[0], obj.datatype[-1]
+    if arrangement not in arrangements:
+        raise Instruction.ParsingException("Invalid floating-point vector arrangement")
+    expected_element, lanes = arrangements[arrangement]
+    if element != expected_element or not 0 <= obj.index < lanes:
+        raise Instruction.ParsingException("Invalid floating-point source lane")
+    if element == "h":
+        obj.args_in_restrictions[1] = [f"v{i}" for i in range(16)]
+    return obj
+
+
+class vmulf_lane(Vmul):
+    pattern = "fmul <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]"
+    inputs = ["Va", "Vb"]
+    outputs = ["Vd"]
+
+    @classmethod
+    def make(cls, src):
+        return _check_fp_lane_operands(AArch64Instruction.build(cls, src))
 
 
 class vmul_lane(Vmul):
@@ -2264,6 +2331,16 @@ class vmla(Vmla):
 
 class vfmla(vmla):
     pattern = "fmla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
+
+
+class vfmla_lane(Vmla):
+    pattern = "fmla <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]"
+    inputs = ["Va", "Vb"]
+    in_outs = ["Vd"]
+
+    @classmethod
+    def make(cls, src):
+        return _check_fp_lane_operands(AArch64Instruction.build(cls, src))
 
 
 class vmla_lane(Vmla):
