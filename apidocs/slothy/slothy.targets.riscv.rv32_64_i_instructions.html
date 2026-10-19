@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>slothy.targets.common &mdash; SLOTHY  documentation</title>
+  <title>slothy.targets.riscv.rv32_64_i_instructions &mdash; SLOTHY  documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=96fe82d1" />
@@ -20,8 +20,8 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="slothy.helper" href="slothy.helper.html" />
-    <link rel="prev" title="slothy.targets.query" href="slothy.targets.query.html" /> 
+    <link rel="next" title="slothy.targets.riscv.rv32_64_pseudo_instructions" href="slothy.targets.riscv.rv32_64_pseudo_instructions.html" />
+    <link rel="prev" title="slothy.targets.riscv.rv32_64_b_instructions" href="slothy.targets.riscv.rv32_64_b_instructions.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -60,9 +60,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="slothy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy</span></code></a><ul class="current">
 <li class="toctree-l3 current"><a class="reference internal" href="slothy.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="slothy.targets.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="slothy.cli.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.cli</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="slothy.core.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.core</span></code></a></li>
-<li class="toctree-l4 current"><a class="reference internal" href="slothy.targets.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="slothy.html#submodules">Submodules</a></li>
@@ -90,9 +90,10 @@
           <li class="breadcrumb-item"><a href="../index.html">API Reference</a></li>
           <li class="breadcrumb-item"><a href="slothy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy</span></code></a></li>
           <li class="breadcrumb-item"><a href="slothy.targets.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets</span></code></a></li>
-      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets.common</span></code></li>
+          <li class="breadcrumb-item"><a href="slothy.targets.riscv.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets.riscv</span></code></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets.riscv.rv32_64_i_instructions</span></code></li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../../_sources/apidocs/slothy/slothy.targets.common.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/apidocs/slothy/slothy.targets.riscv.rv32_64_i_instructions.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -100,37 +101,42 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-slothy.targets.common">
-<span id="slothy-targets-common"></span><h1><a class="reference internal" href="#module-slothy.targets.common" title="slothy.targets.common"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets.common</span></code></a><a class="headerlink" href="#module-slothy.targets.common" title="Link to this heading"></a></h1>
+  <section id="module-slothy.targets.riscv.rv32_64_i_instructions">
+<span id="slothy-targets-riscv-rv32-64-i-instructions"></span><h1><a class="reference internal" href="#module-slothy.targets.riscv.rv32_64_i_instructions" title="slothy.targets.riscv.rv32_64_i_instructions"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets.riscv.rv32_64_i_instructions</span></code></a><a class="headerlink" href="#module-slothy.targets.riscv.rv32_64_i_instructions" title="Link to this heading"></a></h1>
+<p>This module creates the RV3264-I extension set instructions</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-left">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.riscv.rv32_64_i_instructions.generate_rv32_64_i_instructions" title="slothy.targets.riscv.rv32_64_i_instructions.generate_rv32_64_i_instructions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_rv32_64_i_instructions</span></code></a></p></td>
+<td><p>Generates all instruction classes for the rv32_64_i extension set</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="data">
+<h3>Data<a class="headerlink" href="#data" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-left">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.riscv.rv32_64_i_instructions.i_instrs" title="slothy.targets.riscv.rv32_64_i_instructions.i_instrs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">i_instrs</span></code></a></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="api">
 <h3>API<a class="headerlink" href="#api" title="Link to this heading"></a></h3>
-<dl class="py exception">
-<dt class="sig sig-object py" id="slothy.targets.common.FatalParsingException">
-<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slothy.targets.common.</span></span><span class="sig-name descname"><span class="pre">FatalParsingException</span></span><a class="headerlink" href="#slothy.targets.common.FatalParsingException" title="Link to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>A fatal error happened during instruction parsing</p>
-<p class="rubric">Initialization</p>
-<p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
+<dl class="py data">
+<dt class="sig sig-object py" id="slothy.targets.riscv.rv32_64_i_instructions.i_instrs">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.riscv.rv32_64_i_instructions.</span></span><span class="sig-name descname"><span class="pre">i_instrs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[(['addi&lt;w&gt;',</span> <span class="pre">'slti',</span> <span class="pre">'sltiu',</span> <span class="pre">'andi',</span> <span class="pre">'ori',</span> <span class="pre">'xori',</span> <span class="pre">'slli&lt;w&gt;',</span> <span class="pre">'srli&lt;w&gt;',</span> <span class="pre">'srai&lt;w&gt;'],),</span> <span class="pre">(['and',</span> <span class="pre">'...</span></em><a class="headerlink" href="#slothy.targets.riscv.rv32_64_i_instructions.i_instrs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
-<dl class="py exception">
-<dt class="sig sig-object py" id="slothy.targets.common.UnknownInstruction">
-<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slothy.targets.common.</span></span><span class="sig-name descname"><span class="pre">UnknownInstruction</span></span><a class="headerlink" href="#slothy.targets.common.UnknownInstruction" title="Link to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>The parent instruction class for the given object could not be found</p>
-<p class="rubric">Initialization</p>
-<p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
-
-<dl class="py exception">
-<dt class="sig sig-object py" id="slothy.targets.common.UnknownRegister">
-<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slothy.targets.common.</span></span><span class="sig-name descname"><span class="pre">UnknownRegister</span></span><a class="headerlink" href="#slothy.targets.common.UnknownRegister" title="Link to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>The register could not be found</p>
-<p class="rubric">Initialization</p>
-<p>Initialize self.  See help(type(self)) for accurate signature.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.riscv.rv32_64_i_instructions.generate_rv32_64_i_instructions">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.riscv.rv32_64_i_instructions.</span></span><span class="sig-name descname"><span class="pre">generate_rv32_64_i_instructions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.riscv.rv32_64_i_instructions.generate_rv32_64_i_instructions" title="Link to this definition"></a></dt>
+<dd><p>Generates all instruction classes for the rv32_64_i extension set</p>
 </dd></dl>
 
 </section>
@@ -141,8 +147,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="slothy.targets.query.html" class="btn btn-neutral float-left" title="slothy.targets.query" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="slothy.helper.html" class="btn btn-neutral float-right" title="slothy.helper" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="slothy.targets.riscv.rv32_64_b_instructions.html" class="btn btn-neutral float-left" title="slothy.targets.riscv.rv32_64_b_instructions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="slothy.targets.riscv.rv32_64_pseudo_instructions.html" class="btn btn-neutral float-right" title="slothy.targets.riscv.rv32_64_pseudo_instructions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

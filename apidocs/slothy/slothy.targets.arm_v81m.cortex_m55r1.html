@@ -20,8 +20,8 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="slothy.targets.arm_v81m.arch_v81m" href="slothy.targets.arm_v81m.arch_v81m.html" />
-    <link rel="prev" title="slothy.targets.arm_v81m.cortex_m85r1" href="slothy.targets.arm_v81m.cortex_m85r1.html" /> 
+    <link rel="next" title="slothy.targets.arm_v81m.cortex_m85r1" href="slothy.targets.arm_v81m.cortex_m85r1.html" />
+    <link rel="prev" title="slothy.targets.arm_v81m.helium_experimental" href="slothy.targets.arm_v81m.helium_experimental.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -60,9 +60,9 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="slothy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy</span></code></a><ul class="current">
 <li class="toctree-l3 current"><a class="reference internal" href="slothy.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="slothy.targets.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="slothy.cli.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.cli</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="slothy.core.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.core</span></code></a></li>
-<li class="toctree-l4 current"><a class="reference internal" href="slothy.targets.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">slothy.targets</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="slothy.html#submodules">Submodules</a></li>
@@ -120,6 +120,24 @@
 <table class="autosummary longtable docutils align-left">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1.add_further_constraints" title="slothy.targets.arm_v81m.cortex_m55r1.add_further_constraints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_further_constraints</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1._get_inst" title="slothy.targets.arm_v81m.cortex_m55r1._get_inst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_inst</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1._is_same_base_scalar_str_ldr" title="slothy.targets.arm_v81m.cortex_m55r1._is_same_base_scalar_str_ldr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_same_base_scalar_str_ldr</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1._try_evaluate_immediate" title="slothy.targets.arm_v81m.cortex_m55r1._try_evaluate_immediate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_try_evaluate_immediate</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1.try_get_base_and_imm" title="slothy.targets.arm_v81m.cortex_m55r1.try_get_base_and_imm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">try_get_base_and_imm</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1.m55_dtcm_bank" title="slothy.targets.arm_v81m.cortex_m55r1.m55_dtcm_bank"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m55_dtcm_bank</span></code></a></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1.is_same_bank_scalar_store_load_hazard" title="slothy.targets.arm_v81m.cortex_m55r1.is_same_bank_scalar_store_load_hazard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_same_bank_scalar_store_load_hazard</span></code></a></p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#slothy.targets.arm_v81m.cortex_m55r1._add_st_ld_hazard" title="slothy.targets.arm_v81m.cortex_m55r1._add_st_ld_hazard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_add_st_ld_hazard</span></code></a></p></td>
@@ -229,6 +247,36 @@
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1._get_inst">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">_get_inst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1._get_inst" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1._is_same_base_scalar_str_ldr">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">_is_same_base_scalar_str_ldr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inst_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1._is_same_base_scalar_str_ldr" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1._try_evaluate_immediate">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">_try_evaluate_immediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1._try_evaluate_immediate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1.try_get_base_and_imm">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">try_get_base_and_imm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1.try_get_base_and_imm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1.m55_dtcm_bank">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">m55_dtcm_bank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imm</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1.m55_dtcm_bank" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1.is_same_bank_scalar_store_load_hazard">
+<span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">is_same_bank_scalar_store_load_hazard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inst_b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1.is_same_bank_scalar_store_load_hazard" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="slothy.targets.arm_v81m.cortex_m55r1._add_st_ld_hazard">
 <span class="sig-prename descclassname"><span class="pre">slothy.targets.arm_v81m.cortex_m55r1.</span></span><span class="sig-name descname"><span class="pre">_add_st_ld_hazard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slothy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slothy.targets.arm_v81m.cortex_m55r1._add_st_ld_hazard" title="Link to this definition"></a></dt>
 <dd></dd></dl>
@@ -281,8 +329,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="slothy.targets.arm_v81m.cortex_m85r1.html" class="btn btn-neutral float-left" title="slothy.targets.arm_v81m.cortex_m85r1" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="slothy.targets.arm_v81m.arch_v81m.html" class="btn btn-neutral float-right" title="slothy.targets.arm_v81m.arch_v81m" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="slothy.targets.arm_v81m.helium_experimental.html" class="btn btn-neutral float-left" title="slothy.targets.arm_v81m.helium_experimental" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="slothy.targets.arm_v81m.cortex_m85r1.html" class="btn btn-neutral float-right" title="slothy.targets.arm_v81m.cortex_m85r1" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
