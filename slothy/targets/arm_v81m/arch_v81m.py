@@ -328,6 +328,8 @@ class Instruction:
                 ldrb_no_imm,
                 ldrb_with_writeback,
                 ldrb_with_post,
+                ldrh,
+                ldrh_no_imm,
                 vldrh,
                 vldrh_no_imm,
                 vldrh_with_writeback,
@@ -436,6 +438,8 @@ class Instruction:
                 ldr,
                 ldr_with_writeback,
                 ldr_with_post,
+                ldrh,
+                ldrh_no_imm,
                 restore,
                 restored,
             ]
@@ -1433,6 +1437,23 @@ class vfma(MVEInstruction):
     in_outs = ["Qda"]
 
 
+class vfma_scalar(MVEInstruction):
+    """Vector-by-scalar floating-point multiply-accumulate (MVE)."""
+
+    pattern = "vfma.<fdt> <Qda>, <Qn>, <Rm>"
+    inputs = ["Qn", "Rm"]
+    in_outs = ["Qda"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        if obj.datatype not in ("f16", "f32"):
+            raise Instruction.ParsingException("VFMA supports f16 and f32")
+        # The scalar source cannot be SP or PC.
+        obj.args_in_restrictions[1] = [f"r{i}" for i in range(13)] + ["r14"]
+        return obj
+
+
 class vfms(MVEInstruction):
     pattern = "vfms.<fdt> <Qda>, <Qn>, <Qm>"
     inputs = ["Qn", "Qm"]
@@ -1443,6 +1464,25 @@ class vmla(MVEInstruction):
     pattern = "vmla.<dt> <Qda>, <Qn>, <Rm>"
     inputs = ["Qn", "Rm"]
     in_outs = ["Qda"]
+
+
+class vmladava(MVEInstruction):
+    pattern = "vmladava.<dt> <Rda>, <Qn>, <Qm>"
+    inputs = ["Qn", "Qm"]
+    in_outs = ["Rda"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        if obj.datatype not in ("s8", "u8", "s16", "u16", "s32", "u32"):
+            raise Instruction.ParsingException("VMLADAVA requires signed/unsigned 8/16/32")
+        # The encoding stores Rda:'0', so only even-numbered GPRs are legal.
+        accumulators = [f"r{i}" for i in range(0, 15, 2)]
+        accumulator = obj.args_in_out[0]
+        if re.fullmatch(r"r\d+", accumulator) and accumulator not in accumulators:
+            raise Instruction.ParsingException("VMLADAVA requires an even accumulator")
+        obj.args_in_out_restrictions[0] = accumulators
+        return obj
 
 
 class vmlaldava(MVEInstruction):
@@ -2182,6 +2222,46 @@ class ldrb_with_post(MVEInstruction):
         obj.pre_index = None
         obj.addr = obj.args_in_out[0]
         return obj
+
+
+class ldrh(MVEInstruction):
+    pattern = "ldrh <Rd>, [<Rn>, <imm>]"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = obj.immediate
+        obj.addr = obj.args_in[0]
+        obj.args_out_restrictions[0] = [f"r{i}" for i in range(13)] + ["r14"]
+        return obj
+
+    def write(self):
+        self.immediate = simplify(self.pre_index)
+        return super().write()
+
+
+class ldrh_no_imm(MVEInstruction):
+    pattern = "ldrh <Rd>, [<Rn>]"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = 0
+        obj.addr = obj.args_in[0]
+        obj.args_out_restrictions[0] = [f"r{i}" for i in range(13)] + ["r14"]
+        return obj
+
+    def write(self):
+        self.immediate = simplify(self.pre_index)
+        if int(self.immediate) != 0:
+            self.pattern = ldrh.pattern
+        return super().write()
 
 
 class vldrh(MVEInstruction):
