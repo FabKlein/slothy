@@ -13,7 +13,23 @@ shl v0.16b, v1.16b, #4
 shl d2, d3, #8
 sshr v4.16b, v5.16b, #2
 ushr v6.16b, v7.16b, #3
+ushl v4.4s, v4.4s, v28.4s
+usra v4.2d, v5.2d, #3
 uxtl v8.8h, v9.8b
+ld1r {v11.2D}, [sp]
+ld1 {v0.16b, v1.16b}, [x1]
+ldr x16, [sp, #4]
+str x16, [sp, #4]
+ld2 { v0.S, v1.S }[1], [x1], #8
+ld2 { v0.S, v1.S}[1], [x1], #8
+ld2 {v0.S, v1.S }[1], [x1], #8
+ld2 {v0.S, v1.S}[1], [x1], #8
+st1 {v4.4s, v5.4s, v6.4s, v7.4s}, [x0], #64
+st2 { v0.S, v1.S }[1], [x1], #8
+st2 {v0.s, v1.s }[0], [x11], #8
+st2 { v0.s, v1.s}[0], [x11], #8
+st2 {v0.s, v1.s}[0], [x11], #8
+st2 { v0.S, v1.S }[1], [x1]
 
 zip1 v5.16b, v6.16b, v7.16b
 zip2 v8.16b, v9.16b, v10.16b
@@ -28,6 +44,7 @@ bic v0.8h, 0xf0, lsl #8
 
 mvn v22.16b, v23.16b
 orr v24.16b, v25.16b, v26.16b
+orr v0.4s, #1
 orn v27.16b, v28.16b, v29.16b
 eor v30.16b, v31.16b, v0.16b
 ext v0.16b, v1.16b, v2.16b, #8
@@ -47,6 +64,7 @@ cmgt v4.8h, v30.8h, v16.8h
 cmeq v4.8h, v30.8h, v16.8h
 cmge v4.8h, v30.8h, v16.8h
 cmhi v4.8h, v30.8h, v16.8h
+mov    x1, x2
 mov x12, #0
 movz x13, #0x1234
 movz x14, #0x5678, lsl #16
@@ -56,7 +74,16 @@ ldr d1, [x2], #32
 clz v0.16b, v0.16b
 cnt v0.16b, v0.16b
 tbl v16.16b, {v16.16b}, v24.16b
+tbl v5.16b, {v0.16b, v1.16b}, v25.16b
 fmov w12, s20
+fcsel d0, d1, d2, eq
+csel    x3, x13, x3, eq
+csel    x3, x13, x3, ne
+csel    x3, x13, x3, gt
+csel    x3, x13, x3, lt
+cmp    x2, x3
+cmp x2, #7 
+
 
 // Conditional Compare
 ccmp x0,  x1, #0, eq
@@ -157,6 +184,50 @@ add x2, x30,  x3, lsl #39
 add x2, x30,  x3, ASR #39
 add x2, x30,  x3, asr #39
 
+ldrb w29, [x26,#4]
+ldp w10, w11, [x28, #4]
+stp w10, w11, [x27, #4]
+ldrb w29, [x26]
+ldp w10, w11, [x28]
+stp w10, w11, [x27]
+ld2 {v12.s, v13.s}[0], [x25]
+
 sqdmulh v5.4s, v1.4s, v23.4s
+
+dup v30.2s, w30
+mov v30.s[0], w30
+mov v8.d[0], v5.d[0]
+mov v8.d[1], v5.d[1] 
+
+lsr x2, x2, x3
+movk x1, #0x3fff, lsl 16
+movk x1, #0xfffe, lsl 32
+movk x1, #0x3fff, lsl 48
+sxtb x2, w28
+uxtb w28, w29
+ldp q22, q23, [x26, #32]
+ld4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x15], #64
+st4 {v26.4s, v27.4s, v28.4s, v29.4s}, [x25], #64
+ld3 {v2.4s, v3.4s, v4.4s}, [x17], #48
+st3 {v5.4s, v6.4s, v7.4s}, [x18], #48
+ld2 {v8.4s, v9.4s}, [x19], #32
+st2 {v10.4s, v11.4s}, [x20], #32
+crc32b w5, w5, w7
+crc32h w5, w5, w7
+crc32w w5, w5, w7
+crc32x w5, w5, x8
+crc32cb w6, w6, w7
+crc32ch w6, w6, w7
+crc32cw w6, w6, w7
+crc32cx w6, w6, x8
+fmov x5, d7
+
+asr x11, x12, x7
+asr x11, x12, #7
+csel x11, x10, xzr, eq
+csel x11, x10, xzr, ne
+csel x11, x10, xzr, lt
+csel x11, x10, xzr, gt
+cmp x3, xzr
 
 end:

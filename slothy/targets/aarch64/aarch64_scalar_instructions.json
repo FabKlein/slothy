@@ -794,7 +794,11 @@
       "outputs": [
         "Wd"
       ],
-      "pattern": "ldr <Wd>, [<Xa>, <Wb>, SXTW <imm>]"
+      "pattern": "ldr <Wd>, [<Xa>, <Wb>, SXTW <imm>]",
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      }
     },
     {
       "base": "AArch64Instruction",
@@ -1297,7 +1301,7 @@
       "inputs": [
         "Xa"
       ],
-      "name": "lsr",
+      "name": "lsr_imm",
       "outputs": [
         "Xd"
       ],
@@ -1309,7 +1313,7 @@
         "Xa",
         "Xc"
       ],
-      "name": "lsr_variable",
+      "name": "lsr",
       "outputs": [
         "Xd"
       ],
@@ -1342,7 +1346,7 @@
       "inputs": [
         "Xa"
       ],
-      "name": "asr",
+      "name": "asr_imm",
       "outputs": [
         "Xd"
       ],
@@ -1684,7 +1688,7 @@
         "Xe",
         "Xf"
       ],
-      "name": "csel_ne",
+      "name": "csel",
       "outputs": [
         "Xd"
       ],
@@ -1758,7 +1762,7 @@
       "outputs": [
         "Xd"
       ],
-      "pattern": "ldr <Xd>, <imm>"
+      "pattern": "ldr <Xd>, <literal>"
     },
     {
       "base": "AArch64Instruction",
@@ -2020,6 +2024,158 @@
       "modifiesFlags": "True",
       "name": "cmp_imm",
       "pattern": "cmp <Xa>, <imm>"
+    },
+    {
+      "name": "asr",
+      "base": "AArch64Shift",
+      "pattern": "asr <Xd>, <Xa>, <Xb>",
+      "inputs": [
+        "Xa",
+        "Xb"
+      ],
+      "outputs": [
+        "Xd"
+      ]
+    },
+    {
+      "name": "sxtb",
+      "base": "AArch64Logical",
+      "pattern": "sxtb <Xd>, <Wa>",
+      "inputs": [
+        "Wa"
+      ],
+      "outputs": [
+        "Xd"
+      ]
+    },
+    {
+      "name": "uxtb",
+      "base": "AArch64Logical",
+      "pattern": "uxtb <Wd>, <Wa>",
+      "inputs": [
+        "Wa"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "fcsel",
+      "base": "AArch64ConditionalSelect",
+      "pattern": "fcsel <Dd>, <Dn>, <Dm>, <flag>",
+      "inputs": [
+        "Dn",
+        "Dm"
+      ],
+      "outputs": [
+        "Dd"
+      ],
+      "dependsOnFlags": true
+    },
+    {
+      "name": "movk_imm_lsl",
+      "base": "AArch64Instruction",
+      "pattern": "movk <Xd>, <imm0>, <barrel> <imm1>",
+      "inputs": [],
+      "in_outs": [
+        "Xd"
+      ]
+    },
+    {
+      "name": "crc32b",
+      "base": "AArch64CRC32",
+      "pattern": "crc32b <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32h",
+      "base": "AArch64CRC32",
+      "pattern": "crc32h <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32w",
+      "base": "AArch64CRC32",
+      "pattern": "crc32w <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32x",
+      "base": "AArch64CRC32",
+      "pattern": "crc32x <Wd>, <Wa>, <Xb>",
+      "inputs": [
+        "Wa",
+        "Xb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32cb",
+      "base": "AArch64CRC32",
+      "pattern": "crc32cb <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32ch",
+      "base": "AArch64CRC32",
+      "pattern": "crc32ch <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32cw",
+      "base": "AArch64CRC32",
+      "pattern": "crc32cw <Wd>, <Wa>, <Wb>",
+      "inputs": [
+        "Wa",
+        "Wb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
+    },
+    {
+      "name": "crc32cx",
+      "base": "AArch64CRC32",
+      "pattern": "crc32cx <Wd>, <Wa>, <Xb>",
+      "inputs": [
+        "Wa",
+        "Xb"
+      ],
+      "outputs": [
+        "Wd"
+      ]
     }
   ]
 }

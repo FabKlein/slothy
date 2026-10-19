@@ -4,11 +4,11 @@
     <img src="https://raw.githubusercontent.com/slothy-optimizer/slothy/main/docs/slothy_logo.png" width=160>
 </p>
 
-![Python 3.9](https://img.shields.io/badge/Python-3.9-blue?logo=python)
 ![Python 3.10](https://img.shields.io/badge/Python-3.10-blue?logo=python)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Python 3.13](https://img.shields.io/badge/Python-3.13-blue?logo=python)
+![Python 3.14](https://img.shields.io/badge/Python-3.14-blue?logo=python)
 
 ## About SLOTHY
 
@@ -21,6 +21,7 @@ for:
 SLOTHY is generic in the target architecture and microarchitecture. This repository provides instantiations for:
 - Armv8.1-M+Helium: Cortex-M55, Cortex-M85
 - AArch64: Cortex-A55, and experimentally Cortex-A72, Cortex-X/Neoverse-V, Apple M1 (Firestorm, Icestorm)
+- RISC-V (RV{32,64}IMB): XuanTie C908  
 
 SLOTHY is discussed in [Fast and Clean: Auditable high-performance assembly via constraint solving](https://eprint.iacr.org/2022/1303).
 
@@ -135,7 +136,7 @@ SLOTHY has been successfully used on
 - Ubuntu-21.10 and up (64-bit),
 - macOS Monterey 12.6 and up.
 
-SLOTHY supports Python 3.9 up to 3.13. For development Python >= 3.10 is required.
+SLOTHY supports Python 3.10 up to 3.14. For development Python >= 3.11 is required.
 See [requirements.txt](requirements.txt) for package requirements, and install via `pip install -r requirements.txt`.
 
 **Note:** `requirements.txt` pins versions for reproducibility. If you already have newer versions of some dependencies

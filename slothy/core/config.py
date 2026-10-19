@@ -28,6 +28,7 @@
 """
 SLOTHY configuration
 """
+
 import shutil
 
 from copy import deepcopy
@@ -170,6 +171,30 @@ class Config(NestedPrint, LockAttributes):
         return self._selftest_address_registers
 
     @property
+    def selftest_initial_register_values(self):
+        """Dictionary of register names to fixed initial values for the selftest.
+
+        By default, registers that are not address registers are initialised to
+        random values before each selftest iteration.  Use this option to pin
+        specific registers to a known value instead.
+
+        This is useful when addresses are derived from other registers
+        (e.g. a stride or offset added to a pointer).  The selftest
+        automatically detects address registers, but not registers that
+        contribute to address computation.  A random value in such a
+        register would cause the emulated access to land outside the
+        mapped RAM region and crash the emulator.
+
+        Example::
+
+            slothy.config.selftest_initial_register_values = {"x2": 16}
+
+        sets register x2 to 16 for every selftest iteration instead of a
+        random value.
+        """
+        return self._selftest_initial_register_values
+
+    @property
     def selftest_default_memory_size(self):
         """Default buffer size to use for registers which are automatically inferred to be
         used as pointers and for which no memory size has been configured via
@@ -307,6 +332,29 @@ class Config(NestedPrint, LockAttributes):
         and consider unsetting it to reduce model complexity.
         """
         return self._variable_size
+
+    @property
+    def solver_search_strategy(self):
+        """Decision strategy to register with the CP-SAT solver.
+
+        CP-SAT's "fixed" subsolver follows decision strategies registered in the
+        model. Guiding it explicitly makes solve times reproducible and fast for
+        SLOTHY's scheduling models; without a strategy, OR-Tools >= 9.8 relies on
+        its internal scheduling heuristic, whose randomized tie-breaking makes
+        solve times on large models highly variable, frequently exceeding
+        timeouts.
+
+        Valid values:
+
+        - "lowest_min" (default): branch on the instruction with the earliest
+          possible position, trying the earliest position first. This mimics a
+          greedy earliest-first scheduling pass.
+        - "program_order": branch on instruction positions in original program
+          order, trying the earliest position first.
+        - "auto": do not register a strategy; leave the search entirely to the
+          solver's internal heuristics (previous behavior).
+        """
+        return self._solver_search_strategy
 
     @property
     def keep_tags(self):
@@ -797,6 +845,24 @@ class Config(NestedPrint, LockAttributes):
         """
         return self._split_heuristic_preprocess_naive_interleaving_strategy
 
+    @property
+    def log_dir(self):
+        """The directory where log files should be written.
+
+        This is used for various logging outputs during optimization.
+        """
+        return self._log_dir
+
+    @property
+    def log_model(self):
+        """Whether and where to export the constraint solver model.
+
+        If None (default), the model is not exported. If True, the model
+        is exported to a file named ``slothy_model_<timestamp>.txt`` in
+        :attr:`log_model_dir`. If a string, it is used as the base filename.
+        """
+        return self._log_model
+
     def copy(self):
         """Make a deep copy of the configuration"""
         # Temporarily unset references to Arch and Target for deepcopy
@@ -1101,12 +1167,28 @@ class Config(NestedPrint, LockAttributes):
             """Allow Slothy to introduce stack spills
 
             When this option is enabled, Slothy will consider the introduction
-            of stack spills to reduce register pressure.
+            of stack spills to reduce register pressure. The naming of stack
+            locations can be customized using spill_stack_loc_prefix.
 
             This option should only be disabled if it is known that the input
             assembly suffers from high register pressure. For example, this can
             be the case for symbolic input assembly."""
             return self._allow_spills
+
+        @property
+        def spill_stack_loc_prefix(self):
+            """
+            Prefix for stack location names in generated assembly when spills
+            are enabled.
+
+            When allow_spills is True, this prefix is used to generate unique stack
+            location names in the format "{prefix}_{index}" (e.g., "STACK_LOC_0",
+            "STACK_LOC_1", etc.). This allows customization of naming conventions
+            to match project requirements.
+
+            Default: "STACK_LOC"
+            """
+            return self._spill_stack_loc_prefix
 
         @property
         def spill_type(self):
@@ -1190,6 +1272,7 @@ class Config(NestedPrint, LockAttributes):
             self._allow_reordering = True
             self._allow_renaming = True
             self._allow_spills = False
+            self._spill_stack_loc_prefix = "STACK_LOC"
             self._spill_type = None
 
             self.lock()
@@ -1241,6 +1324,10 @@ class Config(NestedPrint, LockAttributes):
         @allow_spills.setter
         def allow_spills(self, val):
             self._allow_spills = val
+
+        @spill_stack_loc_prefix.setter
+        def spill_stack_loc_prefix(self, val):
+            self._spill_stack_loc_prefix = val
 
         @spill_type.setter
         def spill_type(self, val):
@@ -1334,6 +1421,7 @@ class Config(NestedPrint, LockAttributes):
         self._selftest_iterations = 10
         self._selftest_address_registers = None
         self._selftest_default_memory_size = 1024
+        self._selftest_initial_register_values = {}
         self._selfcheck = True
         self._selfcheck_failure_logfile = None
         self._allow_useless_instructions = False
@@ -1395,9 +1483,10 @@ class Config(NestedPrint, LockAttributes):
         self.mirror_char = "~"
 
         self.solver_random_seed = 42
+        self._solver_search_strategy = "lowest_min"
 
-        # TODO: Document log_dir and log_model
-        self.log_model = None
+        self._log_dir = "."
+        self._log_model = None
         self.log_model_only_on_success = True
         self.log_model_dir = "models"
 
@@ -1459,6 +1548,15 @@ class Config(NestedPrint, LockAttributes):
     def variable_size(self, val):
         self._variable_size = val
 
+    @solver_search_strategy.setter
+    def solver_search_strategy(self, val):
+        if val not in ["program_order", "lowest_min", "auto"]:
+            raise InvalidConfig(
+                "Invalid solver_search_strategy: "
+                f"{val} (expected 'program_order', 'lowest_min', or 'auto')"
+            )
+        self._solver_search_strategy = val
+
     @selftest.setter
     def selftest(self, val):
         self._selftest = val
@@ -1474,6 +1572,10 @@ class Config(NestedPrint, LockAttributes):
     @selftest_default_memory_size.setter
     def selftest_default_memory_size(self, val):
         self._selftest_default_memory_size = val
+
+    @selftest_initial_register_values.setter
+    def selftest_initial_register_values(self, val):
+        self._selftest_initial_register_values = val
 
     @selfcheck.setter
     def selfcheck(self, val):
@@ -1627,3 +1729,11 @@ class Config(NestedPrint, LockAttributes):
     @split_heuristic_repeat.setter
     def split_heuristic_repeat(self, val):
         self._split_heuristic_repeat = val
+
+    @log_dir.setter
+    def log_dir(self, val):
+        self._log_dir = val
+
+    @log_model.setter
+    def log_model(self, val):
+        self._log_model = val

@@ -44,13 +44,30 @@ from slothy.targets.arm_v81m.arch_v81m import (
     ldr,
     ldr_with_writeback,
     ldr_with_post,
+    str_reg,
     mov_imm,
     mvn_imm,
     mov,
     add,
+    add_shifted,
+    log_and,
+    log_and_shifted,
+    mul,
+    orr,
+    orr_shifted,
+    eor,
+    eor_shifted,
+    bic,
+    bic_shifted,
+    ror,
+    ror_imm,
+    ror_short,
+    cmp_reg,
+    cmp_imm,
     sub,
-    pkhbt,
+    pkhbt_shifted,
     add_imm,
+    orr_imm,
     sub_imm,
     vshrnb,
     vshrnt,
@@ -63,6 +80,7 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vshllb,
     vshllt,
     vsli,
+    vsri,
     vmovlb,
     vmovlt,
     vrev16,
@@ -70,7 +88,9 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vrev64,
     vdup,
     vmov_imm,
+    vmov_vector,
     vmov_double_v2r,
+    vmov_double_r2v,
     vadd_sv,
     vadd_vv,
     vsub,
@@ -181,6 +201,8 @@ from slothy.targets.arm_v81m.arch_v81m import (
     vsubf_T2,
     vcaddf,
     and_imm,
+    sbfx,
+    ubfx,
     vmlaldava,
     rsb_imm,
     vaddva,
@@ -191,6 +213,8 @@ from slothy.targets.arm_v81m.arch_v81m import (
     ldrb_no_imm,
     ldrb_with_writeback,
     ldrb_with_post,
+    ldrb_regidx,
+    is_dt_form_of,
 )
 
 issue_rate = 1
@@ -256,18 +280,16 @@ def add_further_constraints(slothy):
             )
 
     for t0, t1 in slothy.get_inst_pairs():
-        c0 = find_class(t0.inst)
-        c1 = find_class(t1.inst)
+        c0_units = get_units(t0.inst)
+        c1_units = get_units(t1.inst)
         # The intent is to have the 1st line capture VFMA-like instructions
         # blocking the MAC pipe, while the second should capture instructions of
         # different kind using this pipe, too.
-        if execution_units[c0] == [
-            [ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]
-        ] and (
-            execution_units[c1] != [[ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]]
+        if c0_units == [[ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]] and (
+            c1_units != [[ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]]
             and (
-                execution_units[c1] == ExecutionUnit.VEC_FPMUL
-                or execution_units[c1] == ExecutionUnit.VEC_FPADD
+                c1_units == ExecutionUnit.VEC_FPMUL
+                or c1_units == ExecutionUnit.VEC_FPADD
             )
         ):
             b0 = slothy._NewBoolVar("")
@@ -301,10 +323,28 @@ execution_units = {
     mvn_imm: ExecutionUnit.SCALAR,
     mov: ExecutionUnit.SCALAR,
     add: ExecutionUnit.SCALAR,
+    add_shifted: ExecutionUnit.SCALAR,
+    log_and: ExecutionUnit.SCALAR,
+    log_and_shifted: ExecutionUnit.SCALAR,
+    mul: ExecutionUnit.SCALAR,
+    orr: ExecutionUnit.SCALAR,
+    orr_shifted: ExecutionUnit.SCALAR,
+    eor: ExecutionUnit.SCALAR,
+    eor_shifted: ExecutionUnit.SCALAR,
+    bic: ExecutionUnit.SCALAR,
+    bic_shifted: ExecutionUnit.SCALAR,
+    ror: ExecutionUnit.SCALAR,
+    ror_imm: ExecutionUnit.SCALAR,
+    ror_short: ExecutionUnit.SCALAR,
+    cmp_reg: ExecutionUnit.SCALAR,
+    cmp_imm: ExecutionUnit.SCALAR,
     sub: ExecutionUnit.SCALAR,
-    pkhbt: ExecutionUnit.SCALAR,
+    pkhbt_shifted: ExecutionUnit.SCALAR,
     and_imm: ExecutionUnit.SCALAR,
+    sbfx: ExecutionUnit.SCALAR,
+    ubfx: ExecutionUnit.SCALAR,
     add_imm: ExecutionUnit.SCALAR,
+    orr_imm: ExecutionUnit.SCALAR,
     rsb_imm: ExecutionUnit.SCALAR,
     sub_imm: ExecutionUnit.SCALAR,
     lsr: ExecutionUnit.SCALAR,
@@ -321,6 +361,7 @@ execution_units = {
     vshllb: ExecutionUnit.VEC_SHFT,
     vshllt: ExecutionUnit.VEC_SHFT,
     vsli: ExecutionUnit.VEC_SHFT,
+    vsri: ExecutionUnit.VEC_SHFT,
     vmovlb: ExecutionUnit.VEC_VMOVLN,
     vmovlt: ExecutionUnit.VEC_VMOVLN,
     vrev16: [ExecutionUnit.VEC_BITWA, ExecutionUnit.VEC_BITWB],
@@ -328,7 +369,9 @@ execution_units = {
     vrev64: [ExecutionUnit.VEC_BITWA, ExecutionUnit.VEC_BITWB],
     vdup: ExecutionUnit.VEC_INT,
     vmov_imm: [ExecutionUnit.VEC_VMOVA, ExecutionUnit.VEC_VMOVB],
+    vmov_vector: [ExecutionUnit.VEC_VMOVA, ExecutionUnit.VEC_VMOVB],
     vmov_double_v2r: [ExecutionUnit.VEC_VMOVA, ExecutionUnit.VEC_VMOVB],
+    vmov_double_r2v: [ExecutionUnit.VEC_VMOVA, ExecutionUnit.VEC_VMOVB],
     vadd_sv: ExecutionUnit.VEC_INT,
     vadd_vv: ExecutionUnit.VEC_INT,
     vcadd: ExecutionUnit.VEC_INT,
@@ -347,8 +390,14 @@ execution_units = {
     vmulh: ExecutionUnit.VEC_MUL,
     vmul_T1: ExecutionUnit.VEC_MUL,
     vmul_T2: ExecutionUnit.VEC_MUL,
-    vmullb: ExecutionUnit.VEC_MUL,
-    vmullt: ExecutionUnit.VEC_MUL,
+    is_dt_form_of(vmullb, ["p8", "p16"]): ExecutionUnit.VEC_INT,
+    is_dt_form_of(vmullt, ["p8", "p16"]): ExecutionUnit.VEC_INT,
+    is_dt_form_of(
+        vmullb, ["s8", "s16", "s32", "u8", "u16", "u32"]
+    ): ExecutionUnit.VEC_MUL,
+    is_dt_form_of(
+        vmullt, ["s8", "s16", "s32", "u8", "u16", "u32"]
+    ): ExecutionUnit.VEC_MUL,
     vqrdmulh_T1: ExecutionUnit.VEC_MUL,
     vqrdmulh_T2: ExecutionUnit.VEC_MUL,
     vqdmlah: ExecutionUnit.VEC_MUL,
@@ -374,9 +423,11 @@ execution_units = {
     ldrb_no_imm: ExecutionUnit.LOAD,
     ldrb_with_writeback: ExecutionUnit.LOAD,
     ldrb_with_post: ExecutionUnit.LOAD,
+    ldrb_regidx: ExecutionUnit.LOAD,
     strd: ExecutionUnit.STORE,
     strd_with_writeback: ExecutionUnit.STORE,
     strd_with_post: ExecutionUnit.STORE,
+    str_reg: ExecutionUnit.STORE,
     restored: ExecutionUnit.STACK_LD,
     restore: ExecutionUnit.STACK_LD,
     saved: ExecutionUnit.STACK_ST,
@@ -459,12 +510,29 @@ inverse_throughput = {
         mvn_imm,
         mov,
         add,
+        add_shifted,
+        log_and,
+        log_and_shifted,
+        orr,
+        orr_shifted,
+        eor,
+        eor_shifted,
+        bic,
+        bic_shifted,
+        ror,
+        ror_imm,
+        ror_short,
+        cmp_reg,
+        cmp_imm,
         sub,
-        pkhbt,
+        pkhbt_shifted,
         add_imm,
+        orr_imm,
         sub_imm,
         vmov_imm,
+        vmov_vector,
         vmov_double_v2r,
+        vmov_double_r2v,
         ldr,
         ldr_with_writeback,
         ldr_with_post,
@@ -476,18 +544,23 @@ inverse_throughput = {
         ldrb_no_imm,
         ldrb_with_writeback,
         ldrb_with_post,
+        ldrb_regidx,
         strd,
         strd_with_writeback,
         strd_with_post,
+        str_reg,
         restored,
         restore,
         and_imm,
+        sbfx,
+        ubfx,
         saved,
         rsb_imm,
         save,
         lsr,
         lsr_imm,
         lsl_imm,
+        mul,
     ): 1,
     (
         vrshr,
@@ -502,6 +575,7 @@ inverse_throughput = {
         vshllb,
         vshllt,
         vsli,
+        vsri,
         vmovlb,
         vmovlt,
         vrev16,
@@ -624,9 +698,24 @@ default_latencies = {
         mvn_imm,
         mov,
         add,
+        add_shifted,
+        log_and,
+        log_and_shifted,
+        orr,
+        orr_shifted,
+        eor,
+        eor_shifted,
+        bic,
+        bic_shifted,
+        ror,
+        ror_imm,
+        ror_short,
+        cmp_reg,
+        cmp_imm,
         sub,
-        pkhbt,
+        pkhbt_shifted,
         add_imm,
+        orr_imm,
         sub_imm,
         vshr,
         vshl,
@@ -637,7 +726,9 @@ default_latencies = {
         vrev64,
         vdup,
         vmov_imm,
+        vmov_vector,
         vmov_double_v2r,
+        vmov_double_r2v,
         vadd_vv,
         vadd_sv,
         vcadd,
@@ -707,7 +798,13 @@ default_latencies = {
         lsl_imm,
         rsb_imm,
         and_imm,
+        sbfx,
+        ubfx,
     ): 1,
+    is_dt_form_of(vmullb, ["p8", "p16"]): 1,
+    is_dt_form_of(vmullt, ["p8", "p16"]): 1,
+    is_dt_form_of(vmullb, ["s8", "s16", "s32", "u8", "u16", "u32"]): 2,
+    is_dt_form_of(vmullt, ["s8", "s16", "s32", "u8", "u16", "u32"]): 2,
     (
         vshlc,
         vrshr,
@@ -717,13 +814,12 @@ default_latencies = {
         vshllb,
         vshllt,
         vsli,
+        vsri,
         vmovlb,
         vmovlt,
         vmulh,
         vmul_T1,
         vmul_T2,
-        vmullb,
-        vmullt,
         vqrdmulh_T1,
         vqrdmulh_T2,
         vqdmlah,
@@ -739,6 +835,7 @@ default_latencies = {
         vsubf,
         vsubf_T2,
         vaddva,
+        mul,
     ): 2,
     (vmulf_T1, vmulf_T2, vcmul): 3,
     (
@@ -746,6 +843,7 @@ default_latencies = {
         ldrb_no_imm,
         ldrb_with_writeback,
         ldrb_with_post,
+        ldrb_regidx,
     ): 3,
     (vld20, vld21): 4,
     (vld20_with_writeback, vld21_with_writeback): 4,
@@ -769,6 +867,20 @@ def get_latency(src, out_idx, dst):
     #
     # Check for latency exceptions
     #
+
+    # if inst_src -> inst_dst, the latency from the shifter source operand is 2.
+    if (
+        instclass_dst
+        in [
+            add_shifted,
+            eor_shifted,
+            orr_shifted,
+            log_and_shifted,
+            bic_shifted,
+        ]
+        and dst.args_in[1] in src.args_out
+    ):
+        return default_latency + 1
 
     # VMULx -> VSTR has single cycle latency
     if instclass_dst in [
@@ -887,6 +999,7 @@ def get_latency(src, out_idx, dst):
         vshllb,
         vshllt,
         vsli,
+        vsri,
         vmovlb,
         vmovlt,
         vmulh,

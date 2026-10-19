@@ -50,7 +50,7 @@
 | {"type":"literal","value":"sp"} | Ldp_X |  |  | ["Th"] |  | x_ldp_sp_with_imm_hint | ["Xa","Xb"] | ldph <Xa>, <Xb>, sp, <imm>, <Th> | True | True |  |
 | {"type":"literal","value":"sp"} | Ldp_X |  |  | ["Th0","Th1"] |  | x_ldp_sp_with_imm_hint2 | ["Xa","Xb"] | ldphp <Xa>, <Xb>, sp, <imm>, <Th0>, <Th1> | True | True |  |
 | {"type":"inputs","index":0} | Ldp_X |  |  | ["Xc","Th0","Th1"] |  | x_ldp_with_imm_hint2 | ["Xa","Xb"] | ldphp <Xa>, <Xb>, <Xc>, <imm>, <Th0>, <Th1> | True | True |  |
-|  | AArch64Instruction |  |  | ["Xa","Wb"] |  | ldr_sxtw_wform | ["Wd"] | ldr <Wd>, [<Xa>, <Wb>, SXTW <imm>] |  |  |  |
+| {"type":"inputs","index":0} | AArch64Instruction |  |  | ["Xa","Wb"] |  | ldr_sxtw_wform | ["Wd"] | ldr <Wd>, [<Xa>, <Wb>, SXTW <imm>] |  |  |  |
 |  | AArch64Instruction |  |  | ["Wa","Wb"] |  | lsr_wform | ["Wd"] | lsr <Wd>, <Wa>, <Wb> |  |  |  |
 |  | AArch64Instruction |  |  | ["Wa"] |  | asr_wform | ["Wd"] | asr <Wd>, <Wa>, <imm> |  |  |  |
 |  | AArch64BasicArithmetic |  |  | ["Wa"] | True | subs_wform | ["Wd"] | subs <Wd>, <Wa>, <imm> |  |  |  |
@@ -93,11 +93,11 @@
 |  | AArch64ShiftedArithmetic |  |  | ["Xa","Xb"] |  | add_shifted | ["Xd"] | add <Xd>, <Xa>, <Xb>, <barrel> <imm> |  |  |  |
 |  | AArch64ShiftedArithmetic |  |  | ["Xa","Xb"] | True | adds_shifted | ["Xd"] | adds <Xd>, <Xa>, <Xb>, <barrel> <imm> |  |  |  |
 |  | AArch64ShiftedArithmetic |  |  | ["Xa"] |  | add_imm_shifted | ["Xd"] | add <Xd>, <Xa>, <imm0>, <barrel> <imm1> |  |  |  |
-|  | AArch64Shift |  |  | ["Xa"] |  | lsr | ["Xd"] | lsr <Xd>, <Xa>, <imm> |  |  |  |
-|  | AArch64Shift |  |  | ["Xa","Xc"] |  | lsr_variable | ["Xd"] | lsr <Xd>, <Xa>, <Xc> |  |  |  |
+|  | AArch64Shift |  |  | ["Xa"] |  | lsr_imm | ["Xd"] | lsr <Xd>, <Xa>, <imm> |  |  |  |
+|  | AArch64Shift |  |  | ["Xa","Xc"] |  | lsr | ["Xd"] | lsr <Xd>, <Xa>, <Xc> |  |  |  |
 |  | AArch64Shift |  |  | ["Xa"] |  | lsl | ["Xd"] | lsl <Xd>, <Xa>, <imm> |  |  |  |
 |  | AArch64Shift |  |  | ["Xa"] |  | ror | ["Xd"] | ror <Xd>, <Xa>, <imm> |  |  |  |
-|  | AArch64Shift |  |  | ["Xa"] |  | asr | ["Xd"] | asr <Xd>, <Xa>, <imm> |  |  |  |
+|  | AArch64Shift |  |  | ["Xa"] |  | asr_imm | ["Xd"] | asr <Xd>, <Xa>, <imm> |  |  |  |
 |  | AArch64Logical |  |  | ["Wa"] |  | rev_w | ["Wd"] | rev <Wd>, <Wa> |  |  |  |
 |  | AArch64Logical |  |  | ["Wa","Wb"] |  | eor_wform | ["Wd"] | eor <Wd>, <Wa>, <Wb> |  |  |  |
 |  | AArch64Logical |  |  | ["Wa","Wb"] |  | eon_wform | ["Wd"] | eon <Wd>, <Wa>, <Wb> |  |  |  |
@@ -127,14 +127,14 @@
 |  | AArch64ConditionalSelect | True |  | ["Xe"] |  | cneg | ["Xd"] | cneg <Xd>, <Xe>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  | ["Xe"] |  | csel_xzr_ne | ["Xd"] | csel <Xd>, <Xe>, xzr, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  | ["Xe"] |  | csel_xzr2_ne | ["Xd"] | csel <Xd>, xzr, <Xe>, <flag> |  |  |  |
-|  | AArch64ConditionalSelect | True |  | ["Xe","Xf"] |  | csel_ne | ["Xd"] | csel <Xd>, <Xe>, <Xf>, <flag> |  |  |  |
+|  | AArch64ConditionalSelect | True |  | ["Xe","Xf"] |  | csel | ["Xd"] | csel <Xd>, <Xe>, <Xf>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  | ["Xe"] |  | cinv | ["Xd"] | cinv <Xd>, <Xe>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  | ["Xe"] |  | cinc | ["Xd"] | cinc <Xd>, <Xe>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  |  |  | csetm | ["Xd"] | csetm <Xd>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect | True |  |  |  | cset | ["Xd"] | cset <Xd>, <flag> |  |  |  |
 |  | AArch64ConditionalSelect |  |  | ["Xd","Xe"] | True | cmn |  | cmn <Xd>, <Xe> |  |  |  |
 |  | AArch64ConditionalSelect |  |  | ["Xd"] | True | cmn_imm |  | cmn <Xd>, <imm> |  |  |  |
-|  | AArch64Instruction |  |  | [] |  | ldr_const | ["Xd"] | ldr <Xd>, <imm> |  |  |  |
+|  | AArch64Instruction |  |  | [] |  | ldr_const | ["Xd"] | ldr <Xd>, <literal> |  |  |  |
 |  | AArch64Instruction |  | ["Xd"] | [] |  | movk_imm |  | movk <Xd>, <imm> |  |  |  |
 |  | AArch64Instruction |  |  | ["Wa"] |  | mov | ["Wd"] | mov <Wd>, <Wa> |  |  |  |
 |  | AArch64Move |  |  | [] |  | movz_imm | ["Xd"] | movz <Xd>, <imm> |  |  |  |
@@ -160,3 +160,16 @@
 |  | Tst |  |  | ["Xa"] | True | cmp_xzr |  | cmp <Xa>, xzr |  |  |  |
 |  | Tst |  |  | [] | True | cmp_xzr2 |  | cmp xzr, xzr |  |  |  |
 |  | Tst |  |  | ["Xa"] | True | cmp_imm |  | cmp <Xa>, <imm> |  |  |  |
+|  | AArch64Shift |  |  | ["Xa","Xb"] |  | asr | ["Xd"] | asr <Xd>, <Xa>, <Xb> |  |  |  |
+|  | AArch64Logical |  |  | ["Wa"] |  | sxtb | ["Xd"] | sxtb <Xd>, <Wa> |  |  |  |
+|  | AArch64Logical |  |  | ["Wa"] |  | uxtb | ["Wd"] | uxtb <Wd>, <Wa> |  |  |  |
+|  | AArch64ConditionalSelect | True |  | ["Dn","Dm"] |  | fcsel | ["Dd"] | fcsel <Dd>, <Dn>, <Dm>, <flag> |  |  |  |
+|  | AArch64Instruction |  | ["Xd"] | [] |  | movk_imm_lsl |  | movk <Xd>, <imm0>, <barrel> <imm1> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32b | ["Wd"] | crc32b <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32h | ["Wd"] | crc32h <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32w | ["Wd"] | crc32w <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Xb"] |  | crc32x | ["Wd"] | crc32x <Wd>, <Wa>, <Xb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32cb | ["Wd"] | crc32cb <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32ch | ["Wd"] | crc32ch <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Wb"] |  | crc32cw | ["Wd"] | crc32cw <Wd>, <Wa>, <Wb> |  |  |  |
+|  | AArch64CRC32 |  |  | ["Wa","Xb"] |  | crc32cx | ["Wd"] | crc32cx <Wd>, <Wa>, <Xb> |  |  |  |

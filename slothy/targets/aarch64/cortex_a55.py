@@ -35,6 +35,7 @@ Some latency exceptions were manually identified through microbenchmarks.
 
     The data in this module is approximate and may contain errors.
 """
+
 # ################################ NOTE ############################################ #
 #                                                                                    #
 #  WARNING: The data in this module is approximate and may contain errors.           #
@@ -47,10 +48,14 @@ from slothy.helper import lookup_multidict
 from slothy.targets.aarch64.aarch64_neon import (
     find_class,
     AArch64ConditionalCompare,
+    Ldp_W,
     Ldp_X,
+    q_ldp_with_inc,
     Ldr_X,
     Str_X,
+    x_str_sp_imm,
     Stp_X,
+    Stp_W,
     Ldr_Q,
     Ldp_Q,
     Ldr_D,
@@ -63,8 +68,11 @@ from slothy.targets.aarch64.aarch64_neon import (
     vusra,
     vmul,
     Instruction,
-    fcsel_dform,
+    csel,
+    csel_xzr_ne,
+    fcsel,
     Q_Ld2_Lane_Post_Inc,
+    q_ld2_lane_s,
     vmla,
     vmla_lane,
     vmls,
@@ -79,6 +87,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     Vmull,
     Vmlal,
     vushr,
+    vushl_reg,
     vsshr,
     vuxtl,
     vshl_d,
@@ -90,11 +99,17 @@ from slothy.targets.aarch64.aarch64_neon import (
     Ld3,
     St2,
     Ld2,
+    q_st1_4_with_postinc,
+    q_ld1_2,
+    sxtb,
+    uxtb,
     umov_d,
     mov_d01,
     mov_b00,
+    mov_vtov_d,
     VecToGprMov,
     Mov_xtov_d,
+    mov_wtov_s,
     d_stp_stack_with_inc,
     d_str_stack_with_inc,
     b_ldr_stack_with_inc,
@@ -110,14 +125,12 @@ from slothy.targets.aarch64.aarch64_neon import (
     vuzp2,
     vsub,
     w_stp_with_imm_sp,
-    x_str_sp_imm,
-    x_ldr_stack_imm,
     ldr_const,
     ldr_sxtw_wform,
     umull_wform,
     mul_wform,
     umaddl_wform,
-    lsr,
+    lsr_imm,
     bic,
     bic_reg,
     eor,
@@ -140,10 +153,12 @@ from slothy.targets.aarch64.aarch64_neon import (
     Vins,
     tst_wform,
     movk_imm,
+    movk_imm_lsl,
     movz_imm,
     movz_imm_lsl,
     movw_imm,
     mov_imm,
+    mov_xform,
     sub,
     sbcs_zero_to_zero,
     cmp_xzr2,
@@ -152,10 +167,13 @@ from slothy.targets.aarch64.aarch64_neon import (
     ngc_zero,
     subs_wform,
     asr_wform,
+    asr_imm,
+    asr,
     and_imm_wform,
     eor_wform,
     eon_wform,
     lsr_wform,
+    lsr,
     ASimdCompare,
     and_twoarg,
     VShiftImmediateBasic,
@@ -165,10 +183,22 @@ from slothy.targets.aarch64.aarch64_neon import (
     AArch64NeonLogical,
     AArch64NeonShiftInsert,
     vtbl,
+    vtbl_2,
     sub_imm,
     vuaddlv_sform,
     fmov_s_form,  # from double/single to gen reg
+    fmov_d_form,  # from double/single to gen reg (64-bit)
     cmp,
+    cmp_xzr,
+    vdup_w,
+    crc32b,
+    crc32h,
+    crc32w,
+    crc32x,
+    crc32cb,
+    crc32ch,
+    crc32cw,
+    crc32cx,
 )
 from slothy.targets.aarch64.aarch64 import (
     Ldr_S,
@@ -227,9 +257,7 @@ def add_slot_constraints(slothy):
         Instruction.is_q_form_vector_instruction, [0]
     )
     # fcsel and vld2 on slot 0 only
-    slothy.restrict_slots_for_instructions_by_class(
-        [fcsel_dform, Q_Ld2_Lane_Post_Inc], [0]
-    )
+    slothy.restrict_slots_for_instructions_by_class([fcsel, Q_Ld2_Lane_Post_Inc], [0])
 
 
 def add_st_hazard(slothy):
@@ -255,6 +283,12 @@ def get_min_max_objective(slothy):
     return
 
 
+def is_other_q_pair_load(inst):
+    # The fork groups Q pair loads under Ldp_Q. Upstream gives the immediate
+    # form a separate timing entry, so exclude it from the family fallback.
+    return isinstance(inst, Ldp_Q) and not isinstance(inst, q_ldp_with_inc)
+
+
 execution_units = {
     # q-form vector instructions
     (
@@ -267,16 +301,18 @@ execution_units = {
         vqdmulh_lane,
         vqdmulh_vector,
         Ldr_Q,
-        Ldp_Q,
+        is_other_q_pair_load,
         Str_Q,
         Stp_Q,
         Q_Ld2_Lane_Post_Inc,
+        q_ld2_lane_s,
         Vmull,
         Vmlal,
         vusra,
         vshrn,
         vxtn,
         vtbl,
+        vtbl_2,
         VShiftImmediateRounding,
         AArch64NeonLogical,
         vuaddlv_sform,
@@ -318,7 +354,20 @@ execution_units = {
         ]
         + ExecutionUnit.SCALAR()
     ],
+    q_st1_4_with_postinc: [
+        [
+            ExecutionUnit.VEC0,
+            ExecutionUnit.VEC1,
+            ExecutionUnit.SCALAR_LOAD,
+            ExecutionUnit.SCALAR_STORE,
+        ]
+        + ExecutionUnit.SCALAR()
+    ],
     Ld2: [
+        [ExecutionUnit.VEC0, ExecutionUnit.VEC1, ExecutionUnit.SCALAR_LOAD]
+        + ExecutionUnit.SCALAR()
+    ],
+    q_ld1_2: [
         [ExecutionUnit.VEC0, ExecutionUnit.VEC1, ExecutionUnit.SCALAR_LOAD]
         + ExecutionUnit.SCALAR()
     ],
@@ -335,16 +384,19 @@ execution_units = {
         umov_d,
         mov_d01,
         mov_b00,
-        fcsel_dform,
+        mov_vtov_d,
+        fcsel,
         VecToGprMov,
         Mov_xtov_d,
+        mov_wtov_s,
         d_stp_stack_with_inc,
         d_str_stack_with_inc,
         b_ldr_stack_with_inc,
         d_ldr_stack_with_inc,
-        Q_Ld2_Lane_Post_Inc,
-        fmov_s_form,  # from double/single to gen reg
         Str_S,
+        fmov_s_form,  # from double/single to gen reg
+        fmov_d_form,  # from double/single to gen reg (64-bit)
+        vdup_w,
     ): [
         ExecutionUnit.VEC0,
         ExecutionUnit.VEC1,
@@ -379,6 +431,7 @@ execution_units = {
     is_dform_form_of(vshrn): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vushr): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
     is_dform_form_of(vushr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    is_qform_form_of(vushl_reg): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
     is_qform_form_of(vsshr): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
     is_dform_form_of(vsshr): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vmla): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
@@ -391,24 +444,26 @@ execution_units = {
         [ExecutionUnit.VEC0, ExecutionUnit.VEC1]
     ],
     is_dform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
-    (Stp_X, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
+    (Stp_X, Stp_W, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
     (
-        x_ldr_stack_imm,
         ldr_const,
         ldr_sxtw_wform,
         Ldr_X,
+        Ldp_W,
         Ldp_X,
         Ldp_S,
+        q_ldp_with_inc,
     ): ExecutionUnit.SCALAR_LOAD,
     (umull_wform, mul_wform, umaddl_wform): ExecutionUnit.SCALAR_MUL(),
     (
-        lsr,
+        lsr_imm,
         bic,
         bic_reg,
         bfi,
         ubfx,
         add,
         mov_imm,
+        mov_xform,
         movw_imm,
         cmp_imm,
         eor,
@@ -429,26 +484,44 @@ execution_units = {
         Vins,
         tst_wform,
         movk_imm,
+        movk_imm_lsl,
         movz_imm,
         movz_imm_lsl,
         sub,
         sub_imm,
         cmp,
+        cmp_xzr,
         sbcs_zero_to_zero,
         cmp_xzr2,
         mov,
         ngc_zero,
         subs_wform,
         asr_wform,
+        asr_imm,
+        asr,
         and_imm_wform,
         lsr_wform,
+        lsr,
         eor_wform,
         eon_wform,
+        sxtb,
+        uxtb,
     ): ExecutionUnit.SCALAR(),
     AArch64ConditionalCompare: ExecutionUnit.SCALAR(),
     # NOTE: AESE/AESMC and AESD/AESIMC pairs can be dual-issued on A55 but this
     # is not modeled
     AESInstruction: [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
+    (csel, csel_xzr_ne): ExecutionUnit.SCALAR(),
+    (
+        crc32b,
+        crc32h,
+        crc32w,
+        crc32x,
+        crc32cb,
+        crc32ch,
+        crc32cw,
+        crc32cx,
+    ): ExecutionUnit.SCALAR(),
 }
 
 inverse_throughput = {
@@ -467,7 +540,7 @@ inverse_throughput = {
         umov_d,
         vuaddlv_sform,
     ): 1,
-    (sub_imm, cmp): 1,
+    (sub_imm, cmp, cmp_xzr): 1,
     (
         vmla,
         vmla_lane,
@@ -475,32 +548,48 @@ inverse_throughput = {
         vmls_lane,
     ): 1,
     (sfmadd, sfmsub, sfnmadd, sfnmsub, sfmul, sfnmul): 1,
-    (vshl, vshl_d, vsshr, vushr, vuxtl): 1,
+    (vshl, vshl_d, vsshr, vushr, vushl_reg, vuxtl): 1,
     (trn2, trn1, ASimdCompare): 1,
     (Ldr_D, Ldr_S): 1,
-    (Ldr_Q, Ldp_Q): 2,
+    (Ldr_Q, is_other_q_pair_load): 2,
     (AArch64NeonCount): 1,
     (Str_Q, Stp_Q, Str_S): 1,
     (tst_wform): 1,
     (nop, Vins, Ldr_X, Str_X): 1,
     Ldp_X: 2,
+    Ldp_W: 1,
     St4: 5,
     St3: 3,
     St2: 2,
+    q_st1_4_with_postinc: 4,
     Ld4: 9,
     Ld3: 6,
     Ld2: 4,
+    q_ld1_2: 4,
+    q_ldp_with_inc: 4,
     vxtn: 1,
     vshrn: 2,
     vtbl: 1,  # N cycles (N = number of registers in the table)
-    (fcsel_dform): 1,
-    (VecToGprMov, Mov_xtov_d): 1,
-    (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
+    vtbl_2: 2,
+    (fcsel): 1,
+    (csel, csel_xzr_ne): 1,
+    (VecToGprMov, Mov_xtov_d, mov_wtov_s): 1,
+    (
+        movk_imm,
+        movk_imm_lsl,
+        movz_imm,
+        movz_imm_lsl,
+        mov,
+        mov_imm,
+        mov_xform,
+        movw_imm,
+    ): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
-    (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
-    (x_ldr_stack_imm, ldr_const): 1,
+    (Stp_X, Stp_W, w_stp_with_imm_sp): 1,
+    (ldr_const): 1,
     (ldr_sxtw_wform): 3,
-    (lsr, lsr_wform, ror): 1,
+    (lsr_imm, ror): 1,
+    (lsr, lsr_wform): 2,
     (umull_wform, mul_wform, umaddl_wform): 1,
     (Ldp_S,): 1,
     (Stp_S,): 1,
@@ -516,7 +605,17 @@ inverse_throughput = {
         adcs_zero_r_to_zero,
         cmn,
     ): 1,
-    (cmp_xzr2, cmp_imm, sub, subs_wform, asr_wform, sbcs_zero_to_zero, ngc_zero): 1,
+    (
+        cmp_xzr2,
+        cmp_imm,
+        sub,
+        subs_wform,
+        asr_wform,
+        asr_imm,
+        sbcs_zero_to_zero,
+        ngc_zero,
+    ): 1,
+    asr: 2,
     (bfi, ubfx): 1,
     VShiftImmediateRounding: 1,
     AArch64NeonShiftInsert: 1,
@@ -524,18 +623,23 @@ inverse_throughput = {
     AArch64NeonLogical: 1,
     vext: 1,
     (vuzp1, vuzp2): 1,
-    (Q_Ld2_Lane_Post_Inc,): 1,
+    (Q_Ld2_Lane_Post_Inc, q_ld2_lane_s): 1,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 1,
-    (mov_d01, mov_b00): 1,
+    (mov_d01, mov_b00, mov_vtov_d): 1,
     (vzip1, vzip2): 1,
     (eor_wform, eon_wform): 1,
     (eon, eor, bic, bic_reg, eor_shifted, bic_shifted): 1,
     AArch64ConditionalCompare: 1,
     AESInstruction: 1,
     fmov_s_form: 1,  # from double/single to gen reg
+    fmov_d_form: 1,  # from double/single to gen reg (64-bit)
+    vdup_w: 1,
+    (sxtb, uxtb): 1,
+    (crc32b, crc32h, crc32w, crc32x, crc32cb, crc32ch, crc32cw, crc32cx): 1,
 }
 
 default_latencies = {
+    vdup_w: 3,
     vmov: 2,
     is_qform_form_of([vadd, vsub]): 3,
     is_dform_form_of([vadd, vsub]): 2,
@@ -558,33 +662,49 @@ default_latencies = {
         vmls_lane,
     ): 4,
     (Ldr_D, Ldr_S): 3,
-    (Ldr_Q, Ldp_Q, Str_Q, Stp_Q, Str_S): 4,
-    (sub_imm, cmp): 2,
+    (is_other_q_pair_load, Stp_Q, Str_S): 4,
+    (Ldr_Q, Str_Q): 4,
+    (sub_imm, cmp, cmp_xzr): 2,
     AArch64NeonCount: 2,
     St4: 5,
     St3: 3,
     St2: 2,
+    q_st1_4_with_postinc: 4,
     # TODO: Add distinction between Q/D and B/H vs. D/S
+    q_ld1_2: 6,
     Ld2: 6,
     Ld3: 8,
     Ld4: 11,
     vxtn: 2,
     vshrn: 2,
     vtbl: 2,  # 2+N-1 cycles (N = number of registers in the table)
-    (vuxtl): 2,
+    vtbl_2: 3,
     (Str_X, Ldr_X): 4,
     Ldp_X: 4,
     (Ldp_S, Stp_S): 3,
+    Ldp_W: 3,
+    q_ldp_with_inc: 6,
     (Vins, umov_d): 2,
     (tst_wform): 1,
-    (fcsel_dform): 2,
-    (VecToGprMov, Mov_xtov_d): 2,
-    (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
+    (fcsel): 2,
+    (csel, csel_xzr_ne): 1,
+    (VecToGprMov, Mov_xtov_d, mov_wtov_s): 2,
+    (
+        movk_imm,
+        movk_imm_lsl,
+        movz_imm,
+        movz_imm_lsl,
+        mov,
+        mov_imm,
+        mov_xform,
+        movw_imm,
+    ): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
-    (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
-    (x_ldr_stack_imm, ldr_const): 3,
+    (Stp_X, Stp_W, w_stp_with_imm_sp): 1,
+    (ldr_const): 3,
     (ldr_sxtw_wform): 5,
     (lsr, lsr_wform): 1,
+    lsr_imm: 2,
     (umull_wform, mul_wform, umaddl_wform): 3,
     (vuaddlv_sform): 3,
     (and_imm, and_imm_wform): 1,
@@ -598,13 +718,15 @@ default_latencies = {
         cmn,
         sub,
         subs_wform,
-        asr_wform,
+        asr,
         sbcs_zero_to_zero,
         cmp_xzr2,
         ngc_zero,
         cmp_imm,
     ): 1,
+    (asr_wform, asr_imm): 2,
     (bfi, ubfx): 2,
+    vushl_reg: 2,
     VShiftImmediateRounding: 3,
     VShiftImmediateBasic: 2,
     AArch64NeonShiftInsert: 2,
@@ -613,8 +735,9 @@ default_latencies = {
     vext: 2,
     (vuzp1, vuzp2): 2,
     (Q_Ld2_Lane_Post_Inc,): 3,
+    q_ld2_lane_s: 3,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 3,
-    (mov_d01, mov_b00): 2,
+    (mov_d01, mov_b00, mov_vtov_d): 2,
     (vzip1, vzip2): 2,
     (eor_wform, eon_wform): 1,
     # According to SWOG, this is 2 cycles, byt if the output is used as a
@@ -627,6 +750,10 @@ default_latencies = {
     # is not modeled
     AESInstruction: 2,
     fmov_s_form: 1,  # from double/single to gen reg
+    fmov_d_form: 1,  # from double/single to gen reg (64-bit)
+    (sxtb, uxtb): 1,
+    (crc32b, crc32h, crc32x, crc32cb, crc32ch, crc32cx): 2,
+    (crc32w, crc32cw): 1,
 }
 
 
@@ -638,15 +765,12 @@ def get_latency(src, out_idx, dst):
 
     latency = lookup_multidict(default_latencies, src, instclass_src)
 
-    if (
-        instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel_dform]
-        and latency < 3
-    ):
+    if instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel] and latency < 3:
         latency += 1
 
     if [instclass_src, instclass_dst] in [
-        [lsr, mul_wform],
-        [lsr, umaddl_wform],
+        [lsr_imm, mul_wform],
+        [lsr_imm, umaddl_wform],
         [vbic, vusra],
         [vbic_imm_shifted, vusra],
     ]:

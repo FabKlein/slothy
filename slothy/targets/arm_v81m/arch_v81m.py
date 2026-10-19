@@ -41,6 +41,11 @@ from enum import Enum
 from sympy import simplify
 
 from slothy.helper import Loop
+from slothy.targets.exceptions import (
+    FatalParsingException,
+    UnknownInstruction,
+    ParsingException,
+)
 
 arch_name = "Arm_v81M"
 llvm_mca_arch = "arm"
@@ -57,6 +62,7 @@ class RegisterType(Enum):
     StackMVE = (3,)
     StackGPR = (4,)
     HINT = (5,)
+    FLAGS = (6,)
 
     def __str__(self):
         return self.name
@@ -68,6 +74,8 @@ class RegisterType(Enum):
     def is_renamed(ty):
         """Indicate if register type should be subject to renaming"""
         if ty == RegisterType.HINT:
+            return False
+        if ty == RegisterType.FLAGS:
             return False
         return True
 
@@ -106,6 +114,7 @@ class RegisterType(Enum):
             RegisterType.StackMVE: qstack_locations,
             RegisterType.MVE: vregs,
             RegisterType.HINT: [],
+            RegisterType.FLAGS: ["flags"],
         }[reg_type]
 
     @staticmethod
@@ -128,6 +137,7 @@ class RegisterType(Enum):
             "mve": RegisterType.MVE,
             "gpr": RegisterType.GPR,
             "hint": RegisterType.HINT,
+            "flags": RegisterType.FLAGS,
         }.get(string, None)
 
     def default_aliases():
@@ -135,7 +145,9 @@ class RegisterType(Enum):
 
     def default_reserved():
         """Return the list of registers that should be reserved by default"""
-        return set(["r13", "r14"] + RegisterType.list_registers(RegisterType.HINT))
+        return set(
+            ["flags", "r13", "r14"] + RegisterType.list_registers(RegisterType.HINT)
+        )
 
 
 class LeLoop(Loop):
@@ -191,15 +203,7 @@ class LeLoop(Loop):
         yield f"{indent}{other['instr']} lr, {lbl_start}"
 
 
-class FatalParsingException(Exception):
-    """A fatal error happened during instruction parsing"""
-
-
 class Instruction:
-    class ParsingException(Exception):
-        def __init__(self, err=None):
-            super().__init__(err)
-
     def __init__(
         self, *, mnemonic, arg_types_in=None, arg_types_in_out=None, arg_types_out=None
     ):
@@ -242,7 +246,9 @@ class Instruction:
         self.immediate = None
         self.datatype = None
         self.index = None
+        self.width = None
         self.flag = None
+        self.barrel = None
 
     def extract_read_writes(self):
         """Extracts 'reads'/'writes' clauses from the source line of the instruction"""
@@ -385,6 +391,7 @@ class Instruction:
                 strd,
                 strd_with_writeback,
                 strd_with_post,
+                str_reg,
                 qsave,
                 qrestore,
                 save,
@@ -491,7 +498,9 @@ class Instruction:
         """Abstract factory method parsing a string into an instruction instance."""
 
     @staticmethod
-    def build(c: any, src: str, mnemonic: str, **kwargs: list) -> "Instruction":
+    def build(  # noqa: DOC103
+        c: any, src: str, mnemonic: str, **kwargs: list
+    ) -> "Instruction":
         """Attempt to parse a string as an instance of an instruction.
 
         :param c: The target instruction the string should be attempted to be parsed as.
@@ -500,20 +509,20 @@ class Instruction:
         :type src: str
         :param mnemonic: The mnemonic of instruction c
         :type mnemonic: str
-        :param **kwargs: Additional arguments to pass to the constructor of c.
-        :type **kwargs: list
+        :param ``**kwargs``: Additional arguments to pass to the constructor of c.
+        :type ``**kwargs``: list
 
         :return: Upon success, the result of parsing src as an instance of c.
         :rtype: Instruction
 
-        :raises Instruction.ParsingException: The str argument cannot be parsed as an
+        :raises ParsingException: The str argument cannot be parsed as an
                 instance of c.
         :raises FatalParsingException: A fatal error during parsing happened
                 that's likely a bug in the model.
         """
 
         if src.split(" ")[0] != mnemonic:
-            raise Instruction.ParsingException("Mnemonic does not match")
+            raise ParsingException("Mnemonic does not match")
 
         obj = c(mnemonic=mnemonic, **kwargs)
 
@@ -529,7 +538,7 @@ class Instruction:
 
         p = regexp.match(src)
         if p is None:
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Doesn't match basic instruction template {regexp_txt}"
             )
 
@@ -572,7 +581,7 @@ class Instruction:
                 instnames = [inst_class.__name__]
                 insts = [inst]
                 break
-            except Instruction.ParsingException as e:
+            except ParsingException as e:
                 exceptions[inst_class.__name__] = e
         for i in insts:
             i.source_line = src_line
@@ -583,7 +592,7 @@ class Instruction:
             for i, e in exceptions.items():
                 msg = f"* {i + ':':20s} {e}"
                 logging.error(msg)
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Couldn't parse {src}\nYou may need to add support "
                 "for a new instruction (variant)?"
             )
@@ -654,10 +663,15 @@ class MVEInstruction(Instruction):
             "(((0[xb])?[0-9a-fA-F]+|/| |-|\\*|\\+|\\(|\\)|=|<<|>>)+)"
         )
         index_pattern = "[0-9]+"
+        width_pattern = r"(?:\.w|\.n|)"
+        barrel_pattern = "(?:lsl|ror|lsr|asr)\\\\s*"
+
         src = replace_placeholders(src, "imm", imm_pattern, "imm")
         src = replace_placeholders(src, "dt", dt_pattern, "datatype")
         src = replace_placeholders(src, "fdt", fdt_pattern, "datatype")
         src = replace_placeholders(src, "index", index_pattern, "index")
+        src = replace_placeholders(src, "width", width_pattern, "width")
+        src = replace_placeholders(src, "barrel", barrel_pattern, "barrel")
 
         src = r"\s*" + src + r"\s*(//.*)?\Z"
         return src
@@ -670,7 +684,7 @@ class MVEInstruction(Instruction):
         def _parse(line):
             regexp_result = regexp.match(line)
             if regexp_result is None:
-                raise Instruction.ParsingException(
+                raise ParsingException(
                     f"Does not match instruction pattern {src}" f"[regex: {regexp_txt}]"
                 )
             res = regexp.match(line).groupdict()
@@ -696,16 +710,14 @@ class MVEInstruction(Instruction):
         MVEInstruction.PARSERS[pattern] = parser
         return parser
 
+    @staticmethod
     @cache
-    def __infer_register_type(ptrn):
+    def _infer_register_type(ptrn):
         if ptrn[0].upper() in ["R"]:
             return RegisterType.GPR
         if ptrn[0].upper() in ["Q"]:
             return RegisterType.MVE
         raise FatalParsingException(f"Unknown pattern: {ptrn}")
-
-    # TODO: remove workaround (needed for Python 3.9)
-    _infer_register_type = staticmethod(__infer_register_type)
 
     def __init__(
         self,
@@ -730,14 +742,13 @@ class MVEInstruction(Instruction):
         arg_types_out = [MVEInstruction._infer_register_type(r) for r in outputs]
         arg_types_in_out = [MVEInstruction._infer_register_type(r) for r in in_outs]
 
-        # TODO: add flags
-        # if modifiesFlags:
-        #     arg_types_out += [RegisterType.FLAGS]
-        #     outputs += ["flags"]
+        if modifiesFlags:
+            arg_types_out += [RegisterType.FLAGS]
+            outputs += ["flags"]
 
-        # if dependsOnFlags:
-        #     arg_types_in += [RegisterType.FLAGS]
-        #     inputs += ["flags"]
+        if dependsOnFlags:
+            arg_types_in += [RegisterType.FLAGS]
+            inputs += ["flags"]
 
         super().__init__(
             mnemonic=pattern,
@@ -760,6 +771,8 @@ class MVEInstruction(Instruction):
 
     @staticmethod
     def _to_reg(ty, s):
+        if ty == RegisterType.FLAGS:
+            return "flags"
         if ty == RegisterType.GPR:
             c = "r"
         elif ty == RegisterType.MVE:
@@ -784,8 +797,8 @@ class MVEInstruction(Instruction):
 
     @staticmethod
     def _instantiate_pattern(s, ty, arg, out):
-        # if ty == RegisterType.FLAGS:
-        #   return out
+        if ty == RegisterType.FLAGS:
+            return out
         rep = MVEInstruction._build_pattern_replacement(s, ty, arg)
         res = out.replace(f"<{s}>", rep)
         if res == out:
@@ -820,17 +833,19 @@ class MVEInstruction(Instruction):
             "imm", "immediate", lambda x: x.replace("#", "")
         )  # Strip '#'
         group_to_attribute("index", "index", int)
+        group_to_attribute("width", "width")
+        group_to_attribute("barrel", "barrel")
 
         for s, ty in obj.pattern_inputs:
-            # if ty == RegisterType.FLAGS:
-            #     obj.args_in.append("flags")
-            # else:
-            obj.args_in.append(MVEInstruction._to_reg(ty, res[s]))
+            if ty == RegisterType.FLAGS:
+                obj.args_in.append("flags")
+            else:
+                obj.args_in.append(MVEInstruction._to_reg(ty, res[s]))
         for s, ty in obj.pattern_outputs:
-            # if ty == RegisterType.FLAGS:
-            #     obj.args_out.append("flags")
-            # else:
-            obj.args_out.append(MVEInstruction._to_reg(ty, res[s]))
+            if ty == RegisterType.FLAGS:
+                obj.args_out.append("flags")
+            else:
+                obj.args_out.append(MVEInstruction._to_reg(ty, res[s]))
 
         for s, ty in obj.pattern_in_outs:
             obj.args_in_out.append(MVEInstruction._to_reg(ty, res[s]))
@@ -844,11 +859,9 @@ class MVEInstruction(Instruction):
         modifies_flags = getattr(c, "modifiesFlags", False)
         depends_on_flags = getattr(c, "dependsOnFlags", False)
         if isinstance(src, str):
-            if (
-                src.split(".")[0] != pattern.split(".")[0]
-                and src.split(" ")[0] != pattern.split(" ")[0]
-            ):
-                raise Instruction.ParsingException("Mnemonic does not match")
+            # Leave checking the mnemonic to the generated parser. Apart from
+            # being redundant, a textual pre-check rejects patterns containing
+            # optional mnemonic suffixes such as <width>.
             res = MVEInstruction.get_parser(pattern)(src)
         else:
             assert isinstance(src, dict)
@@ -901,6 +914,8 @@ class MVEInstruction(Instruction):
         out = replace_pattern(out, "datatype", "dt", lambda x: x.upper())
         out = replace_pattern(out, "datatype", "fdt", lambda x: x.upper())
         out = replace_pattern(out, "index", "index", str)
+        out = replace_pattern(out, "width", "width", lambda x: x.lower())
+        out = replace_pattern(out, "barrel", "barrel", lambda x: x.lower())
 
         out = out.replace("\\[", "[")
         out = out.replace("\\]", "]")
@@ -1005,6 +1020,95 @@ class add(MVEInstruction):
     pattern = "add <Rd>, <Rn>, <Rm>"
     inputs = ["Rn", "Rm"]
     outputs = ["Rd"]
+
+
+class add_shifted(MVEInstruction):
+    pattern = "add <Rd>, <Rn>, <Rm>, <barrel> <imm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class log_and(MVEInstruction):
+    pattern = "and <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class log_and_shifted(MVEInstruction):
+    pattern = "and <Rd>, <Rn>, <Rm>, <barrel> <imm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class mul(MVEInstruction):
+    pattern = "mul <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class orr(MVEInstruction):
+    pattern = "orr <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class orr_shifted(MVEInstruction):
+    pattern = "orr <Rd>, <Rn>, <Rm>, <barrel> <imm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class eor(MVEInstruction):
+    pattern = "eor<width> <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class eor_shifted(MVEInstruction):
+    pattern = "eor<width> <Rd>, <Rn>, <Rm>, <barrel> <imm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class bic(MVEInstruction):
+    pattern = "bic <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class bic_shifted(MVEInstruction):
+    pattern = "bic <Rd>, <Rn>, <Rm>, <barrel> <imm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class ror(MVEInstruction):
+    pattern = "ror <Rd>, <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+
+class ror_imm(MVEInstruction):
+    pattern = "ror <Rd>, <Rn>, <imm>"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+
+class ror_short(MVEInstruction):
+    pattern = "ror <Rd>, <imm>"
+    in_outs = ["Rd"]
+
+
+class cmp_reg(MVEInstruction):
+    pattern = "cmp <Rn>, <Rm>"
+    inputs = ["Rn", "Rm"]
+    modifiesFlags = True
+
+
+class cmp_imm(MVEInstruction):
+    pattern = "cmp <Rn>, <imm>"
+    inputs = ["Rn"]
+    modifiesFlags = True
 
 
 class sub(MVEInstruction):
@@ -1171,7 +1275,7 @@ class ldrd_with_post(MVEInstruction):
 
 
 class ldr(MVEInstruction):
-    pattern = "ldr <Rt>, [<Rn>, <imm>]"
+    pattern = "ldr<width> <Rt>, [<Rn>, <imm>]"
     inputs = ["Rn"]
     outputs = ["Rt"]
 
@@ -1261,6 +1365,19 @@ class strd_with_post(MVEInstruction):
         return obj
 
 
+class str_reg(MVEInstruction):
+    pattern = "str<width> <Rt>, [<Rn>, <imm>]"
+    inputs = ["Rn", "Rt"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = obj.immediate
+        obj.addr = obj.args_in[0]
+        return obj
+
+
 class vrshr(MVEInstruction):
     pattern = "vrshr.<dt> <Qd>, <Qm>, <imm>"
     inputs = ["Qm"]
@@ -1281,6 +1398,12 @@ class vshlc(MVEInstruction):
 class vmov_imm(MVEInstruction):
     pattern = "vmov.<dt> <Qd>, <imm>"
     outputs = ["Qd"]
+
+
+class vmov_vector(MVEInstruction):
+    pattern = "vmov.<dt> <Qd>, <Qm>"
+    outputs = ["Qd"]
+    inputs = ["Qm"]
 
 
 class vmullb(MVEInstruction):
@@ -1307,6 +1430,26 @@ class vmov_double_v2r(MVEInstruction):
     outputs = ["Rt0", "Rt1"]
 
 
+class vmov_double_r2v(MVEInstruction):
+    pattern = "vmov <Qd>[<index0>], <Qa>[<index1>], <Rt0>, <Rt1>"
+    inputs = ["Rt0", "Rt1"]
+    in_outs = ["Qd", "Qa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        if len(obj.args_in_out) == 2 and obj.args_in_out[0] == obj.args_in_out[1]:
+            obj.pattern = "vmov <Qd>[<index0>], <Qd>[<index1>], <Rt0>, <Rt1>"
+            obj.args_in_out = [obj.args_in_out[0]]
+            obj.arg_types_in_out = [obj.arg_types_in_out[0]]
+            obj.args_in_out_restrictions = [obj.args_in_out_restrictions[0]]
+            obj.in_outs = [obj.in_outs[0]]
+            obj.pattern_in_outs = [obj.pattern_in_outs[0]]
+            obj.num_in_out = 1
+        obj.detected_vmov_double_r2v_pair = False
+        return obj
+
+
 class mov(MVEInstruction):
     pattern = "mov <Rd>, <Rm>"
     inputs = ["Rm"]
@@ -1323,8 +1466,8 @@ class mvn_imm(MVEInstruction):
     outputs = ["Rd"]
 
 
-class pkhbt(MVEInstruction):
-    pattern = "pkhbt <Rd>, <Rn>, <Rm>, lsl <imm>"
+class pkhbt_shifted(MVEInstruction):
+    pattern = "pkhbt <Rd>, <Rn>, <Rm>, <barrel> <imm>"
     inputs = ["Rn", "Rm"]
     outputs = ["Rd"]
 
@@ -1335,8 +1478,26 @@ class add_imm(MVEInstruction):
     outputs = ["Rd"]
 
 
+class orr_imm(MVEInstruction):
+    pattern = "orr <Rd>, <Rn>, <imm>"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+
 class and_imm(MVEInstruction):
     pattern = "and <Rd>, <Rn>, <imm>"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+
+class sbfx(MVEInstruction):
+    pattern = "sbfx <Rd>, <Rn>, <imm0>, <imm1>"
+    inputs = ["Rn"]
+    outputs = ["Rd"]
+
+
+class ubfx(MVEInstruction):
+    pattern = "ubfx <Rd>, <Rn>, <imm0>, <imm1>"
     inputs = ["Rn"]
     outputs = ["Rd"]
 
@@ -1385,6 +1546,12 @@ class vshllt(MVEInstruction):
 
 class vsli(MVEInstruction):
     pattern = "vsli.<dt> <Qd>, <Qm>, <imm>"
+    inputs = ["Qm"]
+    in_outs = ["Qd"]
+
+
+class vsri(MVEInstruction):
+    pattern = "vsri.<dt> <Qd>, <Qm>, <imm>"
     inputs = ["Qm"]
     in_outs = ["Qd"]
 
@@ -1448,7 +1615,7 @@ class vfma_scalar(MVEInstruction):
     def make(cls, src):
         obj = MVEInstruction.build(cls, src)
         if obj.datatype not in ("f16", "f32"):
-            raise Instruction.ParsingException("VFMA supports f16 and f32")
+            raise ParsingException("VFMA supports f16 and f32")
         # The scalar source cannot be SP or PC.
         obj.args_in_restrictions[1] = [f"r{i}" for i in range(13)] + ["r14"]
         return obj
@@ -1475,12 +1642,12 @@ class vmladava(MVEInstruction):
     def make(cls, src):
         obj = MVEInstruction.build(cls, src)
         if obj.datatype not in ("s8", "u8", "s16", "u16", "s32", "u32"):
-            raise Instruction.ParsingException("VMLADAVA requires signed/unsigned 8/16/32")
+            raise ParsingException("VMLADAVA requires signed/unsigned 8/16/32")
         # The encoding stores Rda:'0', so only even-numbered GPRs are legal.
         accumulators = [f"r{i}" for i in range(0, 15, 2)]
         accumulator = obj.args_in_out[0]
         if re.fullmatch(r"r\d+", accumulator) and accumulator not in accumulators:
-            raise Instruction.ParsingException("VMLADAVA requires an even accumulator")
+            raise ParsingException("VMLADAVA requires an even accumulator")
         obj.args_in_out_restrictions[0] = accumulators
         return obj
 
@@ -1681,7 +1848,7 @@ def _parse_vfp_scalar_name(token):
     token = token.strip()
     m = re.fullmatch(r"[sS](\d+)", token)
     if m is None:
-        raise Instruction.ParsingException(f"Unsupported scalar register {token}")
+        raise ParsingException(f"Unsupported scalar register {token}")
     return int(m.group(1))
 
 
@@ -1694,18 +1861,18 @@ def _expand_vfp_scalar_registers(spec):
         if "-" in part:
             bounds = [p.strip() for p in part.split("-", 1)]
             if len(bounds) != 2:
-                raise Instruction.ParsingException(f"Malformed register list {part}")
+                raise ParsingException(f"Malformed register list {part}")
             start = _parse_vfp_scalar_name(bounds[0])
             end = _parse_vfp_scalar_name(bounds[1])
             if end < start:
-                raise Instruction.ParsingException(
+                raise ParsingException(
                     "v[ls]dm register ranges must be ascending"
                 )
             regs.extend(range(start, end + 1))
         else:
             regs.append(_parse_vfp_scalar_name(part))
     if not regs:
-        raise Instruction.ParsingException("Empty register list")
+        raise ParsingException("Empty register list")
     return regs
 
 
@@ -1730,10 +1897,10 @@ def _reconstruct_scalar_regs(vec_name, lane_offsets, fallback):
 def _parse_vfp_scalar_transfer_operands(src, opcode, pointer_mode):
     match = _VFP_SCALAR_TRANSFER_REGEX.match(src)
     if match is None:
-        raise Instruction.ParsingException("Does not match VFP transfer pattern")
+        raise ParsingException("Does not match VFP transfer pattern")
     mnemonic = match.group("mnemonic").lower()
     if mnemonic != opcode:
-        raise Instruction.ParsingException("Mnemonic mismatch for VFP transfer")
+        raise ParsingException("Mnemonic mismatch for VFP transfer")
     ptr_token = match.group("ptr").strip()
     writeback = ptr_token.endswith("!")
     if writeback:
@@ -1742,11 +1909,11 @@ def _parse_vfp_scalar_transfer_operands(src, opcode, pointer_mode):
     imm = match.group("imm")
     mode = "post" if imm else ("writeback" if writeback else "plain")
     if mode != pointer_mode:
-        raise Instruction.ParsingException("Addressing mode mismatch for VFP transfer")
+        raise ParsingException("Addressing mode mismatch for VFP transfer")
     scalars = _expand_vfp_scalar_registers(match.group("regs"))
     q_indices = {reg // 4 for reg in scalars}
     if len(q_indices) != 1:
-        raise Instruction.ParsingException(
+        raise ParsingException(
             "v[ls]dm register list must stay within a single Q register"
         )
     q_index = q_indices.pop()
@@ -1813,7 +1980,7 @@ class _vstm_base(MVEInstruction):
         token = token.strip()
         m = re.fullmatch(r"[sS](\d+)", token)
         if m is None:
-            raise Instruction.ParsingException(f"Unsupported scalar register {token}")
+            raise ParsingException(f"Unsupported scalar register {token}")
         return int(m.group(1))
 
     @classmethod
@@ -1826,18 +1993,18 @@ class _vstm_base(MVEInstruction):
             if "-" in part:
                 bounds = [p.strip() for p in part.split("-", 1)]
                 if len(bounds) != 2:
-                    raise Instruction.ParsingException(f"Malformed register list {part}")
+                    raise ParsingException(f"Malformed register list {part}")
                 start = cls._parse_scalar_name(bounds[0])
                 end = cls._parse_scalar_name(bounds[1])
                 if end < start:
-                    raise Instruction.ParsingException(
+                    raise ParsingException(
                         "vstm register ranges must be ascending"
                     )
                 regs.extend(range(start, end + 1))
             else:
                 regs.append(cls._parse_scalar_name(part))
         if not regs:
-            raise Instruction.ParsingException("Empty register list in vstm")
+            raise ParsingException("Empty register list in vstm")
         return regs
 
     @staticmethod
@@ -1851,7 +2018,7 @@ class _vstm_base(MVEInstruction):
     def _parse_operands(cls, src):
         match = cls._REGEX.match(src)
         if match is None:
-            raise Instruction.ParsingException("Does not match vstm pattern")
+            raise ParsingException("Does not match vstm pattern")
         ptr_token = match.group("ptr").strip()
         writeback = ptr_token.endswith("!")
         if writeback:
@@ -1860,11 +2027,11 @@ class _vstm_base(MVEInstruction):
         imm = match.group("imm")
         mode = "post" if imm else ("writeback" if writeback else "plain")
         if mode != cls.pointer_mode:
-            raise Instruction.ParsingException("Addressing mode mismatch for vstm")
+            raise ParsingException("Addressing mode mismatch for vstm")
         scalars = cls._expand_scalar_registers(match.group("regs"))
         q_indices = {idx // 4 for idx in scalars}
         if len(q_indices) != 1:
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 "vstm register list must stay within a single Q register"
             )
         q_index = q_indices.pop()
@@ -2174,6 +2341,20 @@ class ldrb(MVEInstruction):
     def write(self):
         self.immediate = simplify(self.pre_index)
         return super().write()
+
+
+class ldrb_regidx(MVEInstruction):
+    pattern = "ldrb <Rd>, [<Rn>, <Rm>]"
+    inputs = ["Rn", "Rm"]
+    outputs = ["Rd"]
+
+    @classmethod
+    def make(cls, src):
+        obj = MVEInstruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = None
+        obj.addr = obj.args_in[1]
+        return obj
 
 
 class ldrb_no_imm(MVEInstruction):
@@ -3035,6 +3216,79 @@ vqdmlsdh.global_parsing_cb = vqdmlsdh_vqdmladhx_parsing_cb(vqdmlsdh, vqdmladhx)
 vqdmladhx.global_parsing_cb = vqdmlsdh_vqdmladhx_parsing_cb(vqdmladhx, vqdmlsdh)
 
 
+def vmov_double_r2v_parsing_cb(this_class):
+    def mark_outputs_only(inst):
+        inst.num_out = len(inst.args_in_out)
+        inst.args_out = list(inst.args_in_out)
+        inst.arg_types_out = [RegisterType.MVE for _ in inst.args_in_out]
+        inst.args_out_restrictions = list(inst.args_in_out_restrictions)
+        inst.outputs = list(inst.in_outs)
+        inst.pattern_outputs = list(inst.pattern_in_outs)
+
+        inst.num_in_out = 0
+        inst.args_in_out = []
+        inst.in_outs = []
+        inst.pattern_in_outs = []
+        inst.arg_types_in_out = []
+        inst.args_in_out_restrictions = []
+
+        inst.detected_vmov_double_r2v_pair = True
+
+    def core(inst, t, log=None):
+        # Special-case two vmov r2v that jointly overwrite q*.
+        # Conditions:
+        #  - Both vmovs target the same vector register
+        #       (Qd==Qa, and equal across the pair)
+        #  - The two vmovs jointly cover all lanes {0,1,2,3}
+        #  - The first vmov has exactly one in/out data-flow successor, which
+        #    is the second vmov. Unrelated intervening instructions are allowed;
+        #    intervening q-register consumers are not.
+
+        assert isinstance(inst, this_class)
+        if getattr(inst, "detected_vmov_double_r2v_pair", False):
+            return False
+        if getattr(inst, "detected_vmov_double_r2v_pair_successor", False):
+            return False
+
+        if len(t.dst_in_out) != 1 or len(t.dst_in_out[0]) != 1:
+            return False
+        succ = t.dst_in_out[0][0]
+        if not isinstance(succ.inst, this_class):
+            return False
+
+        same_q_this = hasattr(inst, "args_in_out") and len(inst.args_in_out) == 1
+        same_q_next = (
+            hasattr(succ.inst, "args_in_out") and len(succ.inst.args_in_out) == 1
+        )
+        same_q_across = (
+            same_q_this
+            and same_q_next
+            and (inst.args_in_out[0] == succ.inst.args_in_out[0])
+        )
+
+        idx_this = getattr(inst, "index", None)
+        idx_next = getattr(succ.inst, "index", None)
+        full_cover = (
+            isinstance(idx_this, list)
+            and isinstance(idx_next, list)
+            and len(idx_this) == 2
+            and len(idx_next) == 2
+            and set(idx_this + idx_next) == {0, 1, 2, 3}
+        )
+
+        if not (same_q_across and full_cover):
+            return False
+
+        mark_outputs_only(inst)
+        succ.inst.detected_vmov_double_r2v_pair_successor = True
+        return True
+
+    return core
+
+
+vmov_double_r2v.global_parsing_cb = vmov_double_r2v_parsing_cb(vmov_double_r2v)
+
+
 # Returns the list of all subclasses of a class which don't have
 # subclasses themselves
 def all_subclass_leaves(c):
@@ -3062,10 +3316,6 @@ def all_subclass_leaves(c):
 Instruction.all_subclass_leaves = all_subclass_leaves(Instruction)
 
 
-class UnknownInstruction(Exception):
-    pass
-
-
 def iter_MVE_instructions():
     yield from all_subclass_leaves(Instruction)
 
@@ -3074,4 +3324,25 @@ def find_class(src):
     for inst_class in iter_MVE_instructions():
         if isinstance(src, inst_class):
             return inst_class
-    raise Exception("Couldn't find instruction class")
+    raise UnknownInstruction("Couldn't find instruction class")
+
+
+def is_dt_form_of(instr_class, dts=None):
+    if not isinstance(instr_class, list):
+        instr_class = [instr_class]
+
+    def _intersects(ls_a, ls_b):
+        if not isinstance(ls_a, list):
+            ls_a = [ls_a]
+        return len([a for a in ls_a if a in ls_b]) > 0
+
+    def _check_instr_dt(src):
+        # Check if src is an instance of any of the instruction classes
+        # (supports inheritance)
+        for cls in instr_class:
+            if isinstance(src, cls):
+                if dts is None or _intersects(src.datatype, dts):
+                    return True
+        return False
+
+    return _check_instr_dt

@@ -37,9 +37,11 @@ from slothy.targets.aarch64.aarch64_neon import (
     find_class,
     all_subclass_leaves,
     Ldp_X,
+    Ldp_W,
     Ldr_X,
     Str_X,
     Stp_X,
+    Stp_W,
     Ldr_D,
     Ldr_Q,
     Str_Q,
@@ -54,10 +56,12 @@ from slothy.targets.aarch64.aarch64_neon import (
     vusra,
     vmul,
     vdup,
+    vdup_w,
     AESInstruction,
     Transpose,
     AArch64NeonLogical,
     VShiftImmediateBasic,
+    VShiftRegBasic,
     AArch64BasicArithmetic,
     AArch64ConditionalSelect,
     AArch64ConditionalCompare,
@@ -69,7 +73,9 @@ from slothy.targets.aarch64.aarch64_neon import (
     AArch64ShiftedArithmetic,
     AArch64HighMultiply,
     AArch64Multiply,
+    AArch64CRC32,
     VecToGprMov,
+    q_st1_4_with_postinc,
     St3,
     St4,
     Vzip,
@@ -91,12 +97,26 @@ from slothy.targets.aarch64.aarch64_neon import (
     vext,
     AArch64NeonShiftInsert,
     vtbl,
+    vtbl_2,
     vuaddlv_sform,
     fmov_s_form,  # from vec to gen reg
+    fmov_d_form,  # from vec to gen reg (64-bit)
     fmov_0,
     fmov_0_force_output,
     fmov_1,
     fmov_1_force_output,
+    q_ldr1_stack,
+    Q_Ld2_Lane_Post_Inc,
+    q_ld2_lane_s,
+    Ld4,
+    Ld3,
+    Ld2,
+    q_ld1_2,
+    St2,
+    mov_wtov_s,
+    mov_vtov_d,
+    lsr,
+    movk_imm_lsl,
 )
 
 issue_rate = 4
@@ -170,14 +190,20 @@ def get_min_max_objective(slothy):
 execution_units = {
     (
         Ldp_X,
+        Ldp_W,
         Ldr_X,
         Str_X,
         Stp_X,
+        Stp_W,
         Ldr_D,
         Ldr_Q,
         Str_Q,
         Stp_Q,
         Ldp_Q,
+        Ld4,
+        Ld3,
+        Ld2,
+        q_ld1_2,
     ): ExecutionUnit.LSU(),
     # TODO: The following would be more accurate, but does not
     #       necessarily lead to better results, while making the
@@ -189,10 +215,13 @@ execution_units = {
     #          [ExecutionUnit.VEC1, ExecutionUnit.LSU0],
     #          [ExecutionUnit.VEC1, ExecutionUnit.LSU1]],
     # TODO: As above, this should somehow occupy both V and L
+    q_st1_4_with_postinc: ExecutionUnit.V(),
+    St2: ExecutionUnit.V(),
     St3: ExecutionUnit.V(),
-    ASimdCompare: ExecutionUnit.V(),
     St4: ExecutionUnit.V(),
+    ASimdCompare: ExecutionUnit.V(),
     vtbl: ExecutionUnit.V(),
+    vtbl_2: ExecutionUnit.V(),
     (Vzip, Vrev, uaddlp): ExecutionUnit.V(),
     AArch64NeonCount: ExecutionUnit.V(),
     (vmov): ExecutionUnit.V(),
@@ -202,6 +231,7 @@ execution_units = {
     (vadd, vsub): ExecutionUnit.V(),
     (vxtn): ExecutionUnit.V(),
     VShiftImmediateBasic: ExecutionUnit.V1(),
+    VShiftRegBasic: ExecutionUnit.V1(),
     (
         AArch64NeonShiftInsert,
         vsrshr,
@@ -229,16 +259,27 @@ execution_units = {
         fmov_1_force_output,
     ): ExecutionUnit.M(),
     fmov_s_form: ExecutionUnit.V1(),  # from vec to gen reg
+    fmov_d_form: ExecutionUnit.V1(),  # from vec to gen reg (64-bit)
     umull_wform: ExecutionUnit.M(),
     (AArch64HighMultiply, AArch64Multiply): ExecutionUnit.M(),
-    vdup: ExecutionUnit.M(),
+    AArch64CRC32: ExecutionUnit.M(),
+    (vdup, vdup_w): ExecutionUnit.M(),
     # 8B/8H occupies both V0, V1
     vuaddlv_sform: [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
+    q_ldr1_stack: ExecutionUnit.V(),
+    Q_Ld2_Lane_Post_Inc: ExecutionUnit.V(),
+    mov_wtov_s: ExecutionUnit.V(),
+    mov_vtov_d: ExecutionUnit.V(),
+    lsr: ExecutionUnit.I(),
+    movk_imm_lsl: ExecutionUnit.I(),
+    q_ld2_lane_s: ExecutionUnit.V(),
 }
 
 inverse_throughput = {
     (Ldr_X, Str_X, Ldr_D, Ldr_Q, Str_Q, Ldp_Q): 1,
     (Ldp_X, Stp_X): 2,
+    Stp_W: 1,
+    Ldp_W: 1,
     AArch64NeonCount: 1,
     Stp_Q: 2,
     St3: 3,  # Multiple structures, Q form, storing bytes
@@ -255,10 +296,12 @@ inverse_throughput = {
     (vmovi): 1,
     (vxtn): 1,
     VShiftImmediateBasic: 1,
+    VShiftRegBasic: 1,
     (AArch64NeonShiftInsert, vsrshr): 1,
     (Vmul, Vmla, Vqdmulh): 2,
     vusra: 1,
     vtbl: 1,
+    vtbl_2: 1,
     (Vmull, Vmlal): 1,
     (
         AArch64BasicArithmetic,
@@ -278,20 +321,40 @@ inverse_throughput = {
         fmov_1_force_output,
     ): 1,
     fmov_s_form: 1,  # from vec to gen reg
+    fmov_d_form: 1,  # from vec to gen reg (64-bit)
     (AArch64HighMultiply): 4,
     (AArch64Multiply): 3,
-    (vdup): 1,
+    AArch64CRC32: 1,
+    (vdup, vdup_w): 1,
     umull_wform: 1,
     vuaddlv_sform: 1,  # 8B/8H
+    q_ldr1_stack: 1,
+    Q_Ld2_Lane_Post_Inc: 2,
+    q_ld2_lane_s: 2,
+    Ld4: 10,
+    Ld3: 4,
+    Ld2: 2,
+    q_ld1_2: 1,
+    St2: 2,
+    q_st1_4_with_postinc: 4,
+    mov_wtov_s: 1,
+    mov_vtov_d: 1,
+    lsr: 1,
+    movk_imm_lsl: 1,
 }
 
 default_latencies = {
     # For OOO uArch we use relaxed latency modeling for load instructions
     # since the uArch will heavily front-load them anyway
-    (Ldp_X, Ldr_X, Ldr_D, Ldr_Q, Stp_Q, Ldp_Q): 4,
+    (Ldp_X, Ldp_W, Ldr_X, Ldr_D, Ldr_Q, Stp_Q, Ldp_Q): 4,
     (Stp_X, Str_X, Str_Q): 2,
+    Stp_W: 1,
     St3: 6,  # Multiple structures, Q form, storing bytes
     St4: 4,
+    Ld4: 10,
+    Ld3: 8,
+    Ld2: 7,
+    q_ld1_2: 5,
     (Vzip, Vrev, uaddlp): 2,
     VecToGprMov: 2,
     ASimdCompare: 2,
@@ -308,6 +371,7 @@ default_latencies = {
     vusra: 4,  # TODO: Add fwd path
     (Vmull, Vmlal): 4,
     VShiftImmediateBasic: 2,
+    VShiftRegBasic: 2,
     AArch64NeonShiftInsert: 2,
     (vsrshr): 4,
     (
@@ -328,12 +392,24 @@ default_latencies = {
         fmov_1_force_output,
     ): 3,
     fmov_s_form: 2,  # from vec to gen reg
+    fmov_d_form: 2,  # from vec to gen reg (64-bit)
     AArch64HighMultiply: 5,
     AArch64Multiply: 4,
-    (vdup): 3,
+    AArch64CRC32: 2,
+    (vdup, vdup_w): 3,
     umull_wform: 2,
     vtbl: 2,
+    vtbl_2: 2,
     vuaddlv_sform: 5,  # 8B/8H
+    q_ldr1_stack: 7,
+    Q_Ld2_Lane_Post_Inc: 7,
+    q_ld2_lane_s: 7,
+    q_st1_4_with_postinc: 5,
+    St2: 4,
+    mov_wtov_s: 5,
+    mov_vtov_d: 2,
+    lsr: 1,
+    movk_imm_lsl: 1,
 }
 
 
@@ -371,6 +447,13 @@ def get_latency(src, out_idx, dst):
         instclass_src in all_subclass_leaves(Vmlal)
         and instclass_dst in all_subclass_leaves(Vmlal)
         and src.args_in_out[0] == dst.args_in_out[0]
+    ):
+        return 1
+    # Fast CRC32 chain forwarding (SWOG, section 3.21 CRC note 1)
+    if (
+        instclass_src in all_subclass_leaves(AArch64CRC32)
+        and instclass_dst in all_subclass_leaves(AArch64CRC32)
+        and src.args_out[0] == dst.args_in[0]
     ):
         return 1
 

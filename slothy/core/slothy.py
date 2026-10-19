@@ -57,9 +57,9 @@ from slothy.core.core import Config
 from slothy.core.heuristics import Heuristics
 from slothy.helper import (
     AsmAllocation,
-    AsmMacro,
     AsmHelper,
     AsmIfElse,
+    unfold_all_directives,
     CPreprocessor,
     SourceLine,
     LLVM_Mca,
@@ -210,8 +210,8 @@ class Slothy:
         """Conduct a function-level selftest
             .. important::
 
-            To run this, you need `llvm-nm`, `llvm-readobj`, `llvm-mc`
-            in your PATH. Those are part of a standard LLVM setup.
+                To run this, you need `llvm-nm`, `llvm-readobj`, `llvm-mc`
+                in your PATH. Those are part of a standard LLVM setup.
 
         :param funcname: Name of function to be called. Must be exposed as a symbol
         :type funcname: str
@@ -272,9 +272,9 @@ class Slothy:
 
         body = SourceLine.split_semicolons(body)
 
-        # Unfold macros
+        # Unfold macros and directives
         if macros is True:
-            body = AsmMacro.unfold_all_macros(
+            body = unfold_all_directives(
                 pre, body, inherit_comments=c.inherit_macro_comments
             )
 
@@ -380,7 +380,7 @@ class Slothy:
             Slothy._dump("preprocessed", body, self.logger, err=False)
 
         body = SourceLine.split_semicolons(body)
-        body = AsmMacro.unfold_all_macros(
+        body = unfold_all_directives(
             pre, body, inherit_comments=c.inherit_macro_comments
         )
         body = AsmAllocation.unfold_all_aliases(c.register_aliases, body)
@@ -471,7 +471,7 @@ class Slothy:
         c.add_aliases(aliases)
         c.outputs = outputs
 
-        body = AsmMacro.unfold_all_macros(
+        body = unfold_all_directives(
             pre, body, inherit_comments=c.inherit_macro_comments
         )
         body = AsmAllocation.unfold_all_aliases(c.register_aliases, body)
@@ -493,7 +493,7 @@ class Slothy:
         aliases = AsmAllocation.parse_allocs(pre)
         c.add_aliases(aliases)
 
-        body = AsmMacro.unfold_all_macros(
+        body = unfold_all_directives(
             pre, body, inherit_comments=c.inherit_macro_comments
         )
         body = AsmAllocation.unfold_all_aliases(c.register_aliases, body)
@@ -510,7 +510,7 @@ class Slothy:
 
         return body
 
-    def fusion_region(self, start: str, end: str, **kwargs: any):
+    def fusion_region(self, start: str, end: str, **kwargs: any):  # noqa: DOC103
         """Run fusion callbacks on straightline code replacing certain
         instruction (sequences) with an alternative. These replacements are
         defined in the architectural model by setting an instruction class'
@@ -522,8 +522,8 @@ class Slothy:
         :param end: The label marking the end of the part of the code to apply
               fusion to.
         :type end: str
-        :param **kwargs: Additional arguments to pass to the fusion callbacks.
-        :type **kwargs: any
+        :param ``**kwargs``: Additional arguments to pass to the fusion callbacks.
+        :type ``**kwargs``: any
         """
         logger = self.logger.getChild(f"ssa_{start}_{end}")
         pre, body, post = AsmHelper.extract(self.source, start, end)
@@ -536,7 +536,9 @@ class Slothy:
         self.source = pre + body_ssa + post
         assert SourceLine.is_source(self.source)
 
-    def fusion_loop(self, loop_lbl: str, forced_loop_type: any = None, **kwargs: any):
+    def fusion_loop(  # noqa: DOC103
+        self, loop_lbl: str, forced_loop_type: any = None, **kwargs: any
+    ):
         """Run fusion callbacks on loop body replacing certain instruction
         (sequences) with an alternative. These replacements are defined in the
         architectural model by setting an instruction class' global_fusion_cb.
@@ -545,8 +547,8 @@ class Slothy:
         :type loop_lbl: str
         :param forced_loop_type: Forces the loop to be parsed as a certain type.
         :type forced_loop_type: any
-        :param **kwargs: Additional arguments to pass to the fusion callbacks.
-        :type **kwargs: any
+        :param ``**kwargs``: Additional arguments to pass to the fusion callbacks.
+        :type ``**kwargs``: any
         """
         logger = self.logger.getChild(f"ssa_loop_{loop_lbl}")
 
@@ -612,10 +614,11 @@ class Slothy:
             Slothy._dump("preprocessed", body, self.logger, err=False)
 
         body = SourceLine.split_semicolons(body)
-        body = AsmMacro.unfold_all_macros(
+        body = unfold_all_directives(
             early, body, inherit_comments=c.inherit_macro_comments
         )
         body = AsmAllocation.unfold_all_aliases(c.register_aliases, body)
+        body = AsmIfElse.process_instructions(body)
         body = SourceLine.apply_indentation(body, indentation)
         logger.info("SLOTHY version: %s", self._get_version())
         self.logger.info(

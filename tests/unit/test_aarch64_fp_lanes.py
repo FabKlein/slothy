@@ -42,7 +42,7 @@ class FPLaneTests(unittest.TestCase):
                 self.assertTrue(inst.is_vector_load())
                 self.assertEqual(int(parse(inst.write()).pre_index), offset)
         for offset in (-257, 256):
-            with self.assertRaises(arch.Instruction.ParsingException):
+            with self.assertRaises(arch.ParsingException):
                 arch.q_ldur.make(f"ldur q16, [x0, #{offset}]")
 
     def test_ldur_address_fixup(self):
@@ -50,7 +50,7 @@ class FPLaneTests(unittest.TestCase):
         inst.pre_index = -124
         self.assertEqual(int(parse(inst.write()).pre_index), -124)
         inst.pre_index = 256
-        with self.assertRaises(arch.Instruction.ParsingException):
+        with self.assertRaises(arch.ParsingException):
             inst.write()
 
     def test_lane_multiply_and_accumulate_dependencies(self):
@@ -86,7 +86,7 @@ class FPLaneTests(unittest.TestCase):
             "fmul v0.4s, v1.4s, v2.d[1]",
             "fmul v0.16b, v1.16b, v2.b[0]",
         ):
-            with self.assertRaises(arch.Instruction.ParsingException):
+            with self.assertRaises(arch.ParsingException):
                 arch.vmulf_lane.make(text)
 
     def test_a520_scheduling(self):

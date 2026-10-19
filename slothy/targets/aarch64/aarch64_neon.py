@@ -117,7 +117,11 @@ from unicorn.arm64_const import (
 )
 
 
-from slothy.targets.common import FatalParsingException, UnknownInstruction
+from slothy.targets.exceptions import (
+    FatalParsingException,
+    UnknownInstruction,
+    ParsingException,
+)
 from slothy.helper import Loop, SourceLine
 
 cmp = None  # Will be populated from scalar instruction module at import time.
@@ -128,9 +132,9 @@ arch_name = "Arm_AArch64"
 
 llvm_mca_arch = "aarch64"
 llvm_mc_arch = "aarch64"
-# Always add aes flag for llvm-mc assembly -- assuming that the user will not
-# use aes instructions on CPUs that do not support it
-llvm_mc_attr = "aes"
+# Enable llvm-mc feature flags for instruction extensions used in the model.
+# Add flags here as new instruction families are added.
+llvm_mc_attr = "aes,crc"
 
 unicorn_arch = UC_ARCH_ARM64
 unicorn_mode = UC_MODE_ARM
@@ -150,12 +154,10 @@ class RegisterType(Enum):
     def __repr__(self):
         return self.name
 
+    @staticmethod
     @cache
-    def _spillable(reg_type):
+    def spillable(reg_type):
         return reg_type in [RegisterType.GPR]  # For now, only GPRs
-
-    # TODO: remove workaround (needed for Python 3.9)
-    spillable = staticmethod(_spillable)
 
     @staticmethod
     def callee_saved_registers():
@@ -173,8 +175,9 @@ class RegisterType(Enum):
     def unicorn_program_counter():
         return UC_ARM64_REG_PC
 
+    @staticmethod
     @cache
-    def _unicorn_reg_by_name(reg):
+    def unicorn_reg_by_name(reg):
         """Converts string name of register into numerical identifiers used
         within the unicorn engine"""
 
@@ -245,11 +248,9 @@ class RegisterType(Enum):
         }
         return d.get(reg, None)
 
-    # TODO: remove workaround (needed for Python 3.9)
-    unicorn_reg_by_name = staticmethod(_unicorn_reg_by_name)
-
+    @staticmethod
     @cache
-    def _list_registers(
+    def list_registers(
         reg_type, only_extra=False, only_normal=False, with_variants=False
     ):
         """Return the list of all registers of a given type"""
@@ -293,9 +294,6 @@ class RegisterType(Enum):
             RegisterType.HINT: hints,
             RegisterType.FLAGS: flags,
         }[reg_type]
-
-    # TODO: remove workaround (needed for Python 3.9)
-    list_registers = staticmethod(_list_registers)
 
     @staticmethod
     def find_type(r):
@@ -609,16 +607,6 @@ class BranchLoop(Loop):
 
 
 class Instruction:
-
-    class ParsingException(Exception):
-        """An attempt to parse an assembly line as a specific instruction failed
-
-        This is a frequently encountered exception since assembly lines are parsed by
-        trial and error, iterating over all instruction parsers."""
-
-        def __init__(self, err=None):
-            super().__init__(err)
-
     def __init__(
         self, *, mnemonic, arg_types_in=None, arg_types_in_out=None, arg_types_out=None
     ):
@@ -758,7 +746,7 @@ class Instruction:
             return self._is_instance_of([Str_Q, Ldr_Q])
 
         # Operations on specific lanes are not counted as Q-form instructions
-        if self._is_instance_of([Q_Ld2_Lane_Post_Inc]):
+        if self._is_instance_of([Q_Ld2_Lane_Post_Inc, st2_lane, st2_lane_post_inc]):
             return False
 
         dt = self.datatype
@@ -808,7 +796,9 @@ class Instruction:
         """Abstract factory method parsing a string into an instruction instance."""
 
     @staticmethod
-    def build(c: any, src: str, mnemonic: str, **kwargs: list) -> "Instruction":
+    def build(  # noqa: DOC103
+        c: any, src: str, mnemonic: str, **kwargs: list
+    ) -> "Instruction":
         """Attempt to parse a string as an instance of an instruction.
 
         :param c: The target instruction the string should be attempted to be parsed as.
@@ -817,20 +807,20 @@ class Instruction:
         :type src: str
         :param mnemonic: The mnemonic of instruction c
         :type mnemonic: str
-        :param **kwargs: Additional arguments to pass to the constructor of c.
-        :type **kwargs: list
+        :param ``**kwargs``: Additional arguments to pass to the constructor of c.
+        :type ``**kwargs``: list
 
         :return: Upon success, the result of parsing src as an instance of c.
         :rtype: Instruction
 
-        :raises Instruction.ParsingException: The str argument cannot be parsed as an
+        :raises ParsingException: The str argument cannot be parsed as an
                 instance of c.
         :raises FatalParsingException: A fatal error during parsing happened
                 that's likely a bug in the model.
         """
 
         if src.split(" ")[0] != mnemonic:
-            raise Instruction.ParsingException("Mnemonic does not match")
+            raise ParsingException("Mnemonic does not match")
 
         obj = c(mnemonic=mnemonic, **kwargs)
 
@@ -846,7 +836,7 @@ class Instruction:
 
         p = regexp.match(src)
         if p is None:
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Doesn't match basic instruction template {regexp_txt}"
             )
 
@@ -889,13 +879,13 @@ class Instruction:
             try:
                 inst = inst_class.make(src)
                 if inst is None:
-                    raise Instruction.ParsingException(
+                    raise ParsingException(
                         f"{inst_class.__name__} returned None"
                     )
                 instnames = [inst_class.__name__]
                 insts = [inst]
                 break
-            except Instruction.ParsingException as e:
+            except ParsingException as e:
                 exceptions[inst_class.__name__] = e
 
         for i in insts:
@@ -908,7 +898,7 @@ class Instruction:
             for i, e in exceptions.items():
                 msg = f"* {i + ':':20s} {e}"
                 logging.error(msg)
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Couldn't parse {src}\nYou may need to add support "
                 "for a new instruction (variant)?"
             )
@@ -961,8 +951,11 @@ class AArch64Instruction(Instruction):
         flexible_spacing = [
             (r"\s*,\s*", r"\\s*,\\s*"),
             (r"\s*<imm>\s*", r"\\s*<imm>\\s*"),
+            (r"\s*<literal>\s*", r"\\s*<literal>\\s*"),
             (r"\s*\[\s*", r"\\s*\\[\\s*"),
             (r"\s*\]\s*", r"\\s*\\]\\s*"),
+            (r"\s*\{\s*", r"\\s*\\{\\s*"),
+            (r"\s*\}\s*", r"\\s*\\}\\s*"),
             (r"\s*\.\s*", r"\\s*\\.\\s*"),
             (r"\s+", r"\\s+"),
             (r"\\s\*\\s\\+", r"\\s+"),
@@ -1021,14 +1014,20 @@ class AArch64Instruction(Instruction):
         flag_pattern = "|".join(flaglist)
         dt_pattern = "(?:|2|4|8|16)(?:B|H|S|D|b|h|s|d)"
         imm_pattern = (
-            "(#(\\\\w|\\\\s|/| |-|\\*|\\+|\\(|\\)|=|<<|>>)+)"
+            "(#(\\\\w|\\\\s|/| |-|\\*|\\+|\\(|\\)|<<|>>)+)"
             "|"
-            "(((0[xb])?[0-9a-fA-F]+|/| |-|\\*|\\+|\\(|\\)|=|<<|>>)+)"
+            "(((0[xb])?[0-9a-fA-F]+|/| |-|\\*|\\+|\\(|\\)|<<|>>)+)"
+        )
+        literal_pattern = (
+            "(#=(\\\\w|\\\\s|/| |-|\\*|\\+|\\(|\\)|<<|>>)+)"
+            "|"
+            "(=((0[xb])?[0-9a-fA-F]+|/| |-|\\*|\\+|\\(|\\)|=|<<|>>)+)"
         )
         index_pattern = "[0-9]+"
         barrel_pattern = "(?i:lsl|ror|lsr|asr)\\\\s*"
 
         src = replace_placeholders(src, "imm", imm_pattern, "imm")
+        src = replace_placeholders(src, "literal", literal_pattern, "literal")
         src = AArch64Instruction._replace_duplicate_datatypes(src, "dt")
         src = replace_placeholders(src, "dt", dt_pattern, "datatype")
         src = replace_placeholders(src, "index", index_pattern, "index")
@@ -1046,7 +1045,7 @@ class AArch64Instruction(Instruction):
         def _parse(line):
             regexp_result = regexp.match(line)
             if regexp_result is None:
-                raise Instruction.ParsingException(
+                raise ParsingException(
                     f"Does not match instruction pattern {src}" f"[regex: {regexp_txt}]"
                 )
             res = regexp.match(line).groupdict()
@@ -1072,8 +1071,9 @@ class AArch64Instruction(Instruction):
         AArch64Instruction.PARSERS[pattern] = parser
         return parser
 
+    @staticmethod
     @cache
-    def __infer_register_type(ptrn):
+    def _infer_register_type(ptrn):
         if ptrn[0].upper() in ["X", "W"]:
             return RegisterType.GPR
         if ptrn[0].upper() in ["V", "Q", "D", "S", "B"]:
@@ -1081,9 +1081,6 @@ class AArch64Instruction(Instruction):
         if ptrn[0].upper() in ["T"]:
             return RegisterType.HINT
         raise FatalParsingException(f"Unknown pattern: {ptrn}")
-
-    # TODO: remove workaround (needed for Python 3.9)
-    _infer_register_type = staticmethod(__infer_register_type)
 
     def __init__(
         self,
@@ -1202,6 +1199,9 @@ class AArch64Instruction(Instruction):
         group_to_attribute(
             "imm", "immediate", lambda x: x.replace("#", "")
         )  # Strip '#'
+        group_to_attribute(
+            "literal", "immediate", lambda x: x.replace("#", "")
+        )  # Strip '#'
         group_to_attribute("index", "index", int)
         group_to_attribute("flag", "flag")
         group_to_attribute("barrel", "barrel")
@@ -1231,7 +1231,7 @@ class AArch64Instruction(Instruction):
 
         if isinstance(src, str):
             if src.split(" ")[0] != pattern.split(" ")[0]:
-                raise Instruction.ParsingException("Mnemonic does not match")
+                raise ParsingException("Mnemonic does not match")
             res = AArch64Instruction.get_parser(pattern)(src)
         else:
             assert isinstance(src, dict)
@@ -1283,6 +1283,7 @@ class AArch64Instruction(Instruction):
             return txt
 
         out = replace_pattern(out, "immediate", "imm", lambda x: f"#{x}")
+        out = replace_pattern(out, "immediate", "literal", lambda x: f"{x}")
         out = AArch64Instruction._replace_duplicate_datatypes(out, "dt")
         out = replace_pattern(out, "datatype", "dt", lambda x: x.upper())
         out = replace_pattern(out, "flag", "flag")
@@ -1430,6 +1431,23 @@ class q_ld1(Ldr_Q):
         return obj
 
 
+class q_ld1_2(AArch64Instruction):
+    pattern = "ld1 {<Va>.<dt>, <Vb>.<dt>}, [<Xc>]"
+    inputs = ["Xc"]
+    outputs = ["Va", "Vb"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = None
+        obj.addr = obj.args_in[0]
+        obj.args_out_combinations = [
+            ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 31)])
+        ]
+        return obj
+
+
 class prefetch(Ldr_Q):
     pattern = "prfm pld1lkeep, [<Xc>, <imm>]"
     inputs = ["Xc"]
@@ -1479,6 +1497,20 @@ class b_ldr_stack_with_inc(AArch64Instruction):
         return super().write()
 
 
+class q_ld2_lane_s(AArch64Instruction):
+    pattern = "ld2 { <Va>.s, <Vb>.s }[<index>], [<Xa>]"
+    inputs = ["Xa"]
+    outputs = ["Va", "Vb"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.addr = obj.args_in[0]
+        obj.args_out_combinations = [
+            ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 30)])
+        ]
+        return obj
+
 class Q_Ld2_Lane_Post_Inc(AArch64Instruction):
     pass
 
@@ -1491,9 +1523,11 @@ class q_ld2_lane_post_inc(Q_Ld2_Lane_Post_Inc):
     def make(cls, src):
         obj = AArch64Instruction.build(cls, src)
         obj.detected_q_ld2_lane_post_inc_pair = False
+        obj.addr = obj.args_in_out[2]
         obj.args_in_out_combinations = [
             ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 30)])
         ]
+        obj.addr = obj.args_in_out[2]
         return obj
 
     def write(self):
@@ -1502,19 +1536,20 @@ class q_ld2_lane_post_inc(Q_Ld2_Lane_Post_Inc):
 
 class q_ld2_lane_post_inc_force_output(Q_Ld2_Lane_Post_Inc):
     pattern = "ld2 { <Va>.<dt>, <Vb>.<dt> }[<index>], [<Xa>], <imm>"
-    # TODO: Model sp dependency
     in_outs = ["Xa"]
     outputs = ["Va", "Vb"]
 
     @classmethod
     def make(cls, src, force=False):
         if force is False:
-            raise Instruction.ParsingException("Instruction ignored")
+            raise ParsingException("Instruction ignored")
 
         obj = AArch64Instruction.build(cls, src)
+        obj.addr = obj.args_in_out[0]
         obj.args_out_combinations = [
             ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 30)])
         ]
+        obj.addr = obj.args_in_out[0]
         return obj
 
     def write(self):
@@ -1597,7 +1632,7 @@ class q_ldur(Ldr_Q):
         obj = AArch64Instruction.build(cls, src)
         offset = simplify(obj.immediate)
         if offset.is_number and not -256 <= int(offset) <= 255:
-            raise Instruction.ParsingException("LDUR offset must be in [-256, 255]")
+            raise ParsingException("LDUR offset must be in [-256, 255]")
         obj.increment = None
         obj.pre_index = obj.immediate
         obj.addr = obj.args_in[0]
@@ -1606,7 +1641,7 @@ class q_ldur(Ldr_Q):
     def write(self):
         self.immediate = simplify(self.pre_index)
         if self.immediate.is_number and not -256 <= int(self.immediate) <= 255:
-            raise Instruction.ParsingException("LDUR offset must be in [-256, 255]")
+            raise ParsingException("LDUR offset must be in [-256, 255]")
         return super().write()
 
 
@@ -1915,9 +1950,96 @@ class q_st1_2_with_postinc(Stp_Q):
         return obj
 
 
+class q_st1_4_with_postinc(AArch64Instruction):
+    pattern = "st1 {<Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>, <Vd>.<dt>}, [<Xc>], <imm>"
+    inputs = ["Va", "Vb", "Vc", "Vd"]
+    in_outs = ["Xc"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = obj.immediate
+        obj.pre_index = None
+        obj.addr = obj.args_in_out[0]
+        obj.args_in_combinations = [
+            (
+                [0, 1, 2, 3],
+                [[f"v{i}", f"v{i+1}", f"v{i+2}", f"v{i+3}"] for i in range(0, 29)],
+            )
+        ]
+        return obj
+
+
 class Ldr_X(AArch64Instruction):
     pass
 
+
+class w_ldrb_imm(Ldr_X):
+    pattern = "ldrb <Wa>, [<Xc>, <imm>]"
+    inputs = ["Xc"]
+    outputs = ["Wa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = None
+        obj.addr = obj.args_in[0]
+        return obj
+
+class w_ldrb(Ldr_X):
+    pattern = "ldrb <Wa>, [<Xc>]"
+    inputs = ["Xc"]
+    outputs = ["Wa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = 0
+        obj.addr = obj.args_in[0]
+        return obj
+
+    def write(self):
+        if int(self.pre_index) != 0:
+            self.immediate = simplify(self.pre_index)
+            self.pattern = w_ldrb_imm.pattern
+        return super().write()
+
+class Ldp_W(AArch64Instruction):
+    pass
+
+class w_ldp_imm(Ldp_W):
+    pattern = "ldp <Wa>, <Wb>, [<Xc>, <imm>]"
+    inputs = ["Xc"]
+    outputs = ["Wa", "Wb"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = None
+        obj.addr = obj.args_in[0]
+        return obj
+
+class w_ldp(Ldp_W):
+    pattern = "ldp <Wa>, <Wb>, [<Xc>]"
+    inputs = ["Xc"]
+    outputs = ["Wa", "Wb"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = 0
+        obj.addr = obj.args_in[0]
+        return obj
+
+    def write(self):
+        if int(self.pre_index) != 0:
+            self.immediate = simplify(self.pre_index)
+            self.pattern = w_ldp_imm.pattern
+        return super().write()
 
 class Ldp_X(AArch64Instruction):
     pass
@@ -2056,38 +2178,6 @@ class vqdmulh_lane(Vqdmulh):
         return obj
 
 
-class fcsel_dform(Instruction):
-    @classmethod
-    def make(cls, src):
-        obj = Instruction.build(
-            cls,
-            src,
-            mnemonic="fcsel_dform",
-            arg_types_in=[RegisterType.NEON, RegisterType.NEON, RegisterType.FLAGS],
-            arg_types_out=[RegisterType.NEON],
-        )
-
-        regexp_txt = (
-            r"fcsel_dform\s+(?P<dst>\w+)\s*,\s*(?P<src1>\w+)\s*,"
-            r"\s*(?P<src2>\w+)\s*,\s*eq"
-        )
-        regexp_txt = Instruction.unfold_abbrevs(regexp_txt)
-        regexp = re.compile(regexp_txt)
-        p = regexp.match(src)
-        if p is None:
-            raise Instruction.ParsingException("Does not match pattern")
-        obj.args_in = [p.group("src1"), p.group("src2"), "flags"]
-        obj.args_out = [p.group("dst")]
-        obj.args_in_out = []
-
-        return obj
-
-    def write(self):
-        return (
-            f"fcsel_dform {self.args_out[0]}, {self.args_in[0]}, {self.args_in[1]}, eq"
-        )
-
-
 class Vins(AArch64Instruction):
     pass
 
@@ -2106,7 +2196,7 @@ class vins_d_force_output(Vins):
     @classmethod
     def make(cls, src, force=False):
         if force is False:
-            raise Instruction.ParsingException("Instruction ignored")
+            raise ParsingException("Instruction ignored")
         return AArch64Instruction.build(cls, src)
 
 
@@ -2124,6 +2214,12 @@ class vclz(AArch64NeonCount):
     pattern = "clz <Vd>.<dt>, <Va>.<dt>"
     inputs = ["Va"]
     outputs = ["Vd"]
+
+
+class mov_wtov_s(AArch64Instruction):
+    pattern = "mov <Vd>.s[<index>], <Wa>"
+    inputs = ["Wa"]
+    in_outs = ["Vd"]
 
 
 class Mov_xtov_d(AArch64Instruction):
@@ -2149,6 +2245,12 @@ class mov_b00(AArch64Instruction):
 
 class mov_d01(AArch64Instruction):
     pattern = "mov <Vd>.d[0], <Va>.d[1]"
+    inputs = ["Va"]
+    in_outs = ["Vd"]
+
+
+class mov_vtov_d(AArch64Instruction):
+    pattern = "mov <Vd>.d[<index0>], <Va>.d[<index1>]"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
@@ -2193,6 +2295,20 @@ class vtbl(AArch64Instruction):
     outputs = ["Vd"]
 
 
+class vtbl_2(AArch64Instruction):
+    pattern = "tbl <Vd>.<dt>, {<Va>.<dt>, <Vb>.<dt>}, <Vc>.<dt>"
+    inputs = ["Va", "Vb", "Vc"]
+    outputs = ["Vd"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.args_in_combinations = [
+            ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 31)])
+        ]
+        return obj
+
+
 class vand(AArch64NeonLogical):
     pattern = "and <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
     inputs = ["Va", "Vb"]
@@ -2220,6 +2336,11 @@ class vorr(AArch64NeonLogical):
     pattern = "orr <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
     inputs = ["Va", "Vb"]
     outputs = ["Vd"]
+
+
+class vorr_imm(AArch64NeonLogical):
+    pattern = "orr <Vda>.<dt>, <imm>"
+    in_outs = ["Vda"]
 
 
 class vorn(AArch64NeonLogical):
@@ -2283,10 +2404,10 @@ def _check_fp_lane_operands(obj):
     }
     arrangement, element = obj.datatype[0], obj.datatype[-1]
     if arrangement not in arrangements:
-        raise Instruction.ParsingException("Invalid floating-point vector arrangement")
+        raise ParsingException("Invalid floating-point vector arrangement")
     expected_element, lanes = arrangements[arrangement]
     if element != expected_element or not 0 <= obj.index < lanes:
-        raise Instruction.ParsingException("Invalid floating-point source lane")
+        raise ParsingException("Invalid floating-point source lane")
     if element == "h":
         obj.args_in_restrictions[1] = [f"v{i}" for i in range(16)]
     return obj
@@ -2388,6 +2509,12 @@ class vmls_lane(Vmla):
 class vdup(AArch64Instruction):
     pattern = "dup <Vd>.<dt>, <Xa>"
     inputs = ["Xa"]
+    outputs = ["Vd"]
+
+
+class vdup_w(AArch64Instruction):
+    pattern = "dup <Vd>.<dt>, <Wa>"
+    inputs = ["Wa"]
     outputs = ["Vd"]
 
 
@@ -2719,6 +2846,16 @@ class vurshr(VShiftImmediateRounding):
     outputs = ["Vd"]
 
 
+class VShiftRegBasic(AArch64Instruction):
+    pass
+
+
+class vushl_reg(VShiftRegBasic):
+    pattern = "ushl <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
+    inputs = ["Va", "Vb"]
+    outputs = ["Vd"]
+
+
 class AArch64NeonShiftInsert(AArch64Instruction):
     pass
 
@@ -2736,7 +2873,7 @@ class vsri(AArch64NeonShiftInsert):
 
 
 class vusra(AArch64Instruction):
-    pattern = "usra <Vd>.<dt0>, <Va>.<dt1>, <imm>"
+    pattern = "usra <Vd>.<dt>, <Va>.<dt>, <imm>"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
@@ -2767,6 +2904,12 @@ class fmov_s_form(Fmov):
     outputs = ["Wd"]
 
 
+class fmov_d_form(Fmov):
+    pattern = "fmov <Xd>, <Da>"
+    inputs = ["Da"]
+    outputs = ["Xd"]
+
+
 class fmov_0(Fmov):
     pattern = "fmov <Dd>, <Xa>"
     inputs = ["Xa"]
@@ -2781,7 +2924,7 @@ class fmov_0_force_output(Fmov):
     @classmethod
     def make(cls, src, force=False):
         if force is False:
-            raise Instruction.ParsingException("Instruction ignored")
+            raise ParsingException("Instruction ignored")
         return AArch64Instruction.build(cls, src)
 
 
@@ -2799,7 +2942,7 @@ class fmov_1_force_output(Fmov):
     @classmethod
     def make(cls, src, force=False):
         if force is False:
-            raise Instruction.ParsingException("Instruction ignored")
+            raise ParsingException("Instruction ignored")
         return AArch64Instruction.build(cls, src)
 
 
@@ -3030,6 +3173,42 @@ class x_str_imm_hint(Str_X):
 
     def write(self):
         self.immediate = simplify(self.pre_index)
+        return super().write()
+
+
+class Stp_W(AArch64Instruction):
+    pass
+
+
+class w_stp_imm(Stp_W):
+    pattern = "stp <Wa>, <Wb>, [<Xc>, <imm>]"
+    inputs = ["Wa", "Wb", "Xc"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = None
+        obj.addr = obj.args_in[2]
+        return obj
+
+
+class w_stp(Stp_W):
+    pattern = "stp <Wa>, <Wb>, [<Xc>]"
+    inputs = ["Wa", "Wb", "Xc"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.increment = None
+        obj.pre_index = 0
+        obj.addr = obj.args_in[2]
+        return obj
+
+    def write(self):
+        if int(self.pre_index) != 0:
+            self.immediate = simplify(self.pre_index)
+            self.pattern = w_stp_imm.pattern
         return super().write()
 
 
@@ -3341,6 +3520,37 @@ class st2_with_inc(St2):
         return obj
 
 
+class st2_lane(St2):
+    pattern = "st2 { <Va>.<dt>, <Vb>.<dt> }[<index>], [<Xa>]"
+    inputs = ["Va", "Vb", "Xa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.addr = obj.args_in[2]
+        obj.args_in_combinations = [
+            ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 30)])
+        ]
+        return obj
+
+
+class st2_lane_post_inc(St2):
+    pattern = "st2 { <Va>.<dt>, <Vb>.<dt> }[<index>], [<Xa>], <imm>"
+    inputs = ["Va", "Vb"]
+    in_outs = ["Xa"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj.addr = obj.args_in_out[0]
+        obj.increment = obj.immediate
+        obj.pre_index = None
+        obj.args_in_combinations = [
+            ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 30)])
+        ]
+        return obj
+
+
 class Ld4(AArch64Instruction):
     pass
 
@@ -3511,11 +3721,11 @@ class vuaddlv_sform(AArch64Instruction):
 
 
 class Spill:
-    def spill(reg, loc):
-        return f"str {reg}, [sp, #STACK_LOC_{loc}]"
+    def spill(reg, loc, prefix="STACK_LOC"):
+        return f"str {reg}, [sp, #{prefix}_{loc}]"
 
-    def restore(reg, loc):
-        return f"ldr {reg}, [sp, #STACK_LOC_{loc}]"
+    def restore(reg, loc, prefix="STACK_LOC"):
+        return f"ldr {reg}, [sp, #{prefix}_{loc}]"
 
 
 # In a pair of vins writing both 64-bit lanes of a vector, mark the
@@ -3802,6 +4012,9 @@ def eor3_splitting_cb():
 
 def iter_aarch64_instructions():
     yield from all_subclass_leaves(Instruction)
+    # The fork's FP variants subclass these concrete integer instructions.
+    # Keep the integer forms available as well, after their derived variants.
+    yield from (vmla, vmls)
 
 
 def find_class(src):
@@ -3879,7 +4092,7 @@ def all_subclass_leaves(c):
     return all_subclass_leaves_core([], [c])
 
 
-Instruction.all_subclass_leaves = all_subclass_leaves(Instruction)
+Instruction.all_subclass_leaves = list(iter_aarch64_instructions())
 
 
 # Ensure scalar instruction variants are registered when this module loads.

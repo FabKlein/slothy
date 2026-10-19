@@ -65,6 +65,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     Ldr_Q,
     Ldr_D,
     Str_Q,
+    Stp_W,
     vadd,
     vmul,
     St4,
@@ -92,8 +93,12 @@ from slothy.targets.aarch64.aarch64_neon import (
     add_shifted,
     VShiftImmediateRounding,
     VShiftImmediateBasic,
+    VShiftRegBasic,
     St3,
     St2,
+    q_st1_4_with_postinc,
+    q_ld1_2,
+    Ld2,
     Ld3,
     Ld4,
     AESInstruction,
@@ -102,11 +107,34 @@ from slothy.targets.aarch64.aarch64_neon import (
     AArch64NeonLogical,
     AArch64NeonShiftInsert,
     vtbl,
+    vtbl_2,
     sub_imm,
     vuaddlv_sform,
     fmov_s_form,  # from vec to gen reg
+    fmov_d_form,  # from vec to gen reg (64-bit)
+    fcsel,
     eor_shifted,
     bic_shifted,
+    vusra,
+    q_ldr1_stack,
+    mov_vtov_d,
+    Q_Ld2_Lane_Post_Inc,
+    vdup_w,
+    mov_wtov_s,
+    lsr_imm,
+    lsr,
+    movk_imm_lsl,
+    q_ld2_lane_s,
+    Ldp_W,
+    cmp,
+    cmp_xzr,
+    cmp_imm,
+    csel,
+    csel_xzr_ne,
+    q_ldp_with_inc,
+    AArch64CRC32,
+    asr,
+    asr_imm,
 )
 
 # From the A72 SWOG, Section "4.1 Dispatch Constraints"
@@ -127,8 +155,7 @@ class ExecutionUnit(Enum):
     STORE1 = auto()
     INT0 = auto()
     INT1 = auto()
-    MINT0 = auto()
-    MINT1 = auto()
+    SCALAR_MINT = auto()
     ASIMD0 = auto()
     ASIMD1 = auto()
 
@@ -153,7 +180,7 @@ class ExecutionUnit(Enum):
 
     @classmethod
     def MINT(cls):
-        return [ExecutionUnit.MINT0, ExecutionUnit.MINT1]
+        return [ExecutionUnit.SCALAR_MINT]
 
     @classmethod
     def SCALAR(cls):
@@ -192,7 +219,7 @@ execution_units = {
         Vmlal,
         Vmull,
     ): [ExecutionUnit.ASIMD0],
-    (vadd, vsub, Vzip, trn1, trn2, ASimdCompare, vext, vtbl, sub_imm): [
+    (vadd, vsub, Vzip, trn1, trn2, ASimdCompare, vext, vtbl, vtbl_2): [
         ExecutionUnit.ASIMD0,
         ExecutionUnit.ASIMD1,
     ],
@@ -204,7 +231,21 @@ execution_units = {
         ExecutionUnit.ASIMD0,
         ExecutionUnit.ASIMD1,
     ],
-    AArch64NeonShiftInsert: [ExecutionUnit.ASIMD1],
+    vdup_w: [
+        ExecutionUnit.ASIMD0,
+        ExecutionUnit.ASIMD1,
+    ],
+    mov_wtov_s: [
+        ExecutionUnit.ASIMD0,
+        ExecutionUnit.ASIMD1,
+    ],
+    mov_vtov_d: [
+        ExecutionUnit.ASIMD0,
+        ExecutionUnit.ASIMD1,
+    ],
+    (AArch64NeonShiftInsert, vusra): [ExecutionUnit.ASIMD1],
+    fcsel: ExecutionUnit.ASIMD(),
+    (csel, csel_xzr_ne): ExecutionUnit.INT(),
     AArch64ConditionalCompare: ExecutionUnit.INT(),
     AArch64Logical: [ExecutionUnit.INT()],
     # 8B/8H occupies both F0, F1
@@ -215,16 +256,31 @@ execution_units = {
     (Str_Q, Str_X): ExecutionUnit.STORE(),
     AArch64Move: ExecutionUnit.SCALAR(),
     (add, add_imm, add_shifted): ExecutionUnit.SCALAR(),
-    (VShiftImmediateRounding, VShiftImmediateBasic): [ExecutionUnit.ASIMD1],
+    (VShiftImmediateRounding, VShiftImmediateBasic, VShiftRegBasic): [
+        ExecutionUnit.ASIMD1
+    ],
+    q_st1_4_with_postinc: ExecutionUnit.STORE(),
     (St4, St3, St2): [ExecutionUnit.ASIMD0, ExecutionUnit.ASIMD1],
-    (Ld3, Ld4): [
+    (Ld2, Ld3, Ld4, q_ldr1_stack, Q_Ld2_Lane_Post_Inc, q_ld2_lane_s): [
         [ExecutionUnit.ASIMD0, ExecutionUnit.LOAD0, ExecutionUnit.LOAD1],
         [ExecutionUnit.ASIMD1, ExecutionUnit.LOAD0, ExecutionUnit.LOAD1],
     ],
+    q_ld1_2: ExecutionUnit.LOAD(),
     AESInstruction: [ExecutionUnit.ASIMD0],
     fmov_s_form: ExecutionUnit.LOAD(),  # from vec to gen reg
+    fmov_d_form: ExecutionUnit.LOAD(),  # from vec to gen reg (64-bit)
     eor_shifted: ExecutionUnit.SCALAR(),
     bic_shifted: ExecutionUnit.SCALAR(),
+    lsr_imm: ExecutionUnit.INT(),
+    lsr: ExecutionUnit.INT(),
+    movk_imm_lsl: ExecutionUnit.INT(),
+    (sub_imm, cmp_imm): ExecutionUnit.INT(),
+    (cmp, cmp_xzr): ExecutionUnit.MINT(),
+    Ldp_W: ExecutionUnit.LOAD(),
+    q_ldp_with_inc: ExecutionUnit.LOAD(),
+    Stp_W: ExecutionUnit.STORE(),
+    AArch64CRC32: ExecutionUnit.MINT(),
+    (asr, asr_imm): ExecutionUnit.INT(),
 }
 
 inverse_throughput = {
@@ -247,7 +303,9 @@ inverse_throughput = {
     ASimdCompare: 1,
     (vadd, vsub, trn1, trn2, vext): 1,
     AArch64NeonLogical: 1,
-    AArch64NeonShiftInsert: 1,
+    (AArch64NeonShiftInsert, vusra): 1,
+    fcsel: 1,
+    (csel, csel_xzr_ne): 1,
     AArch64ConditionalCompare: 1,
     AArch64Logical: 1,
     Vins: 1,
@@ -255,19 +313,40 @@ inverse_throughput = {
     (add, add_imm, add_shifted): 1,
     (Ldr_D, Ldr_Q, Str_Q, Ldr_X, Str_X): 1,
     (VShiftImmediateRounding, VShiftImmediateBasic): 1,
+    VShiftRegBasic: 2,
     # TODO: this seems in accurate; revisiting may improve performance
+    q_st1_4_with_postinc: 8,
     St2: 4,
     St3: 6,
     St4: 8,
+    q_ld1_2: 2,
+    Ld2: 2,
     Ld3: 3,
     Ld4: 4,
+    q_ldp_with_inc: 4,
+    q_ldr1_stack: 1,
+    Q_Ld2_Lane_Post_Inc: 2,
+    q_ld2_lane_s: 1,
     vtbl: 1,  # SWOG contains a blank throughput (approximating from AArch32)
+    vtbl_2: 1,
     AESInstruction: 1,
-    sub_imm: 1,
+    (sub_imm, cmp, cmp_xzr, cmp_imm): 1,
     vuaddlv_sform: 1,
     fmov_s_form: 1,  # from vec to gen reg
+    fmov_d_form: 1,  # from vec to gen reg (64-bit)
     eor_shifted: 1,
     bic_shifted: 1,
+    vdup_w: 1,
+    mov_wtov_s: 1,
+    mov_vtov_d: 1,
+    lsr_imm: 1,
+    lsr: 1,
+    movk_imm_lsl: 1,
+    Ldp_W: 1,
+    Stp_W: 1,
+    AArch64CRC32: 1,
+    asr: 1,
+    asr_imm: 1,
 }
 
 # REVISIT
@@ -297,6 +376,9 @@ default_latencies = {
     ): 3,  # Approximation -- not necessary to get it exactly right, as mentioned above
     AArch64NeonLogical: 3,
     AArch64NeonShiftInsert: 3,
+    vusra: 4,
+    fcsel: 3,
+    (csel, csel_xzr_ne): 1,
     AArch64ConditionalCompare: 1,
     AArch64Logical: 1,
     (Ldr_D, Ldr_Q, Ldr_X, Str_Q, Str_X): 4,  # approx
@@ -305,20 +387,42 @@ default_latencies = {
     (add, add_imm, add_shifted): 2,
     VShiftImmediateRounding: 3,  # approx
     VShiftImmediateBasic: 3,
+    VShiftRegBasic: 4,
     AArch64Move: 1,
     # TODO: this seems in accurate; revisiting may improve performance
+    q_st1_4_with_postinc: 8,
     St2: 4,
     St3: 6,
     St4: 8,
+    q_ld1_2: 6,
+    Ld2: 9,
     Ld3: 3,
     Ld4: 4,
+    q_ldp_with_inc: 6,
+    q_ldr1_stack: 8,
+    Q_Ld2_Lane_Post_Inc: 9,
+    q_ld2_lane_s: 8,
     vtbl: 6,  # q-form: 3*N+3 cycles (N = number of registers in the table)
+    vtbl_2: 9,  # N = 2, 3 * N + 3 = 9
     AESInstruction: 3,
-    sub_imm: 3,
+    (sub_imm, cmp_imm): 1,
+    (cmp, cmp_xzr): 2,
     vuaddlv_sform: 6,  # 8B/8H
     fmov_s_form: 5,  # from vec to gen reg
+    fmov_d_form: 5,  # from vec to gen reg (64-bit)
     eor_shifted: 2,
     bic_shifted: 2,
+    vdup_w: 8,
+    mov_wtov_s: 8,
+    mov_vtov_d: 3,
+    lsr_imm: 1,
+    lsr: 1,
+    movk_imm_lsl: 1,
+    Ldp_W: 4,
+    Stp_W: 1,
+    AArch64CRC32: 2,
+    asr: 1,
+    asr_imm: 1,
 }
 
 
@@ -356,6 +460,13 @@ def get_latency(src, out_idx, dst):
         instclass_src in all_subclass_leaves(Vmlal)
         and instclass_dst in all_subclass_leaves(Vmlal)
         and src.args_in_out[0] == dst.args_in_out[0]
+    ):
+        return 1
+    # Fast CRC32 chain forwarding (A72 SWOG)
+    if (
+        instclass_src in all_subclass_leaves(AArch64CRC32)
+        and instclass_dst in all_subclass_leaves(AArch64CRC32)
+        and src.args_out[0] == dst.args_in[0]
     ):
         return 1
 

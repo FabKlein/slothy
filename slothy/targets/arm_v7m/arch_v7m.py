@@ -4,6 +4,11 @@ import math
 import itertools
 from enum import Enum
 from functools import cache
+from slothy.targets.exceptions import (
+    FatalParsingException,
+    UnknownInstruction,
+    ParsingException,
+)
 
 from unicorn import (
     UC_ARCH_ARM,
@@ -86,12 +91,10 @@ class RegisterType(Enum):
     def __repr__(self):
         return self.name
 
+    @staticmethod
     @cache
-    def _spillable(reg_type):
+    def spillable(reg_type):
         return reg_type in [RegisterType.GPR]
-
-    # TODO: remove workaround (needed for Python 3.9)
-    spillable = staticmethod(_spillable)
 
     @staticmethod
     def callee_saved_registers():
@@ -109,8 +112,9 @@ class RegisterType(Enum):
     def unicorn_stack_pointer():
         return UC_ARM_REG_SP
 
+    @staticmethod
     @cache
-    def _unicorn_reg_by_name(reg):
+    def unicorn_reg_by_name(reg):
         """Converts string name of register into numerical identifiers used
         within the unicorn engine"""
 
@@ -165,11 +169,9 @@ class RegisterType(Enum):
         }
         return d.get(reg, None)
 
-    # TODO: remove workaround (needed for Python 3.9)
-    unicorn_reg_by_name = staticmethod(_unicorn_reg_by_name)
-
+    @staticmethod
     @cache
-    def _list_registers(
+    def list_registers(
         reg_type, only_extra=False, only_normal=False, with_variants=False
     ):
         """Return the list of all registers of a given type"""
@@ -203,9 +205,6 @@ class RegisterType(Enum):
             RegisterType.HINT: hints,
             RegisterType.FLAGS: flags,
         }[reg_type]
-
-    # TODO: remove workaround (needed for Python 3.9)
-    list_registers = staticmethod(_list_registers)
 
     @staticmethod
     def find_type(r):
@@ -701,29 +700,7 @@ class SubsLoop(Loop):
         yield f"{indent}bne {lbl_start}"
 
 
-class FatalParsingException(Exception):
-    """A fatal error happened during instruction parsing"""
-
-
-class UnknownInstruction(Exception):
-    """The parent instruction class for the given object could not be found"""
-
-
-class UnknownRegister(Exception):
-    """The register could not be found"""
-
-
 class Instruction:
-
-    class ParsingException(Exception):
-        """An attempt to parse an assembly line as a specific instruction failed
-
-        This is a frequently encountered exception since assembly lines are parsed by
-        trial and error, iterating over all instruction parsers."""
-
-        def __init__(self, err=None):
-            super().__init__(err)
-
     def __init__(
         self, *, mnemonic, arg_types_in=None, arg_types_in_out=None, arg_types_out=None
     ):
@@ -903,7 +880,9 @@ class Instruction:
         """Abstract factory method parsing a string into an instruction instance."""
 
     @staticmethod
-    def build(c: any, src: str, mnemonic: str, **kwargs: list) -> "Instruction":
+    def build(  # noqa: DOC103
+        c: any, src: str, mnemonic: str, **kwargs: list
+    ) -> "Instruction":
         """Attempt to parse a string as an instance of an instruction.
 
 
@@ -913,20 +892,20 @@ class Instruction:
         :type src: str
         :param mnemonic: The mnemonic of instruction c
         :type mnemonic: str
-        :param **kwargs: Additional arguments to pass to the constructor of c.
-        :type **kwargs: list
+        :param ``**kwargs``: Additional arguments to pass to the constructor of c.
+        :type ``**kwargs``: list
 
         :return: Upon success, the result of parsing src as an instance of c.
         :rtype: Instruction
 
-        :raises Instruction.ParsingException: The str argument cannot be parsed as an
+        :raises ParsingException: The str argument cannot be parsed as an
                 instance of c.
         :raises FatalParsingException: A fatal error during parsing happened
                 that's likely a bug in the model.
         """
 
         if src.split(" ")[0] != mnemonic:
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Mnemonic does not match: {src.split(' ')[0]} vs. {mnemonic}"
             )
 
@@ -944,7 +923,7 @@ class Instruction:
 
         p = regexp.match(src)
         if p is None:
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Doesn't match basic instruction template {regexp_txt}"
             )
 
@@ -987,7 +966,7 @@ class Instruction:
                 instnames = [inst_class.__name__]
                 insts = [inst]
                 break
-            except Instruction.ParsingException as e:
+            except ParsingException as e:
                 exceptions[inst_class.__name__] = e
 
         for i in insts:
@@ -1005,7 +984,7 @@ class Instruction:
             for i, e in exceptions.items():
                 msg = f"* {i + ':':20s} {e}"
                 logging.error(msg)
-            raise Instruction.ParsingException(
+            raise ParsingException(
                 f"Couldn't parse {src}\nYou may need to add support "
                 "for a new instruction (variant)?"
             )
@@ -1118,7 +1097,7 @@ class Armv7mInstruction(Instruction):
         def _parse(line):
             regexp_result = regexp.match(line)
             if regexp_result is None:
-                raise Instruction.ParsingException(
+                raise ParsingException(
                     f"Does not match instruction pattern {src}" f"[regex: {regexp_txt}]"
                 )
             res = regexp.match(line).groupdict()
@@ -1144,8 +1123,9 @@ class Armv7mInstruction(Instruction):
         Armv7mInstruction.PARSERS[pattern] = parser
         return parser
 
+    @staticmethod
     @cache
-    def __infer_register_type(ptrn):
+    def _infer_register_type(ptrn):
         if ptrn[0].upper() in ["R"]:
             return RegisterType.GPR
         if ptrn[0].upper() in ["S"]:
@@ -1153,9 +1133,6 @@ class Armv7mInstruction(Instruction):
         if ptrn[0].upper() in ["T"]:
             return RegisterType.HINT
         raise FatalParsingException(f"Unknown pattern: {ptrn}")
-
-    # TODO: remove workaround (needed for Python 3.9)
-    _infer_register_type = staticmethod(__infer_register_type)
 
     def __init__(
         self,
@@ -2331,7 +2308,7 @@ class bne(Armv7mBranch):
 
 
 class Spill:
-    def spill(reg, loc, spill_to_vreg=None):
+    def spill(reg, loc, spill_to_vreg=None, prefix="STACK_LOC"):
         """Generates the instruction text for a spill to either
         the stack or the FPR. If spill_to_vreg is None (default),
         the spill goes to the stack. Otherwise, spill_to_vreg must
@@ -2339,12 +2316,12 @@ class Spill:
         which should be used as a stack. For example, passing 8 would
         spill to s8,s9,.. ."""
         if spill_to_vreg is None:
-            return f"str {reg}, [sp, #STACK_LOC_{loc}]"
+            return f"str {reg}, [sp, #{prefix}_{loc}]"
         else:
             vreg_base = int(spill_to_vreg)
             return f"vmov s{vreg_base+int(loc)}, {reg}"
 
-    def restore(reg, loc, spill_to_vreg=None):
+    def restore(reg, loc, spill_to_vreg=None, prefix="STACK_LOC"):
         """Generates the instruction text for a spill restore from either
         the stack or the FPR. If spill_to_vreg is None (default),
         the spill goes to the stack. Otherwise, spill_to_vreg must
@@ -2352,7 +2329,7 @@ class Spill:
         which should be used as a stack. For example, passing 8 would
         spill to s8,s9,.. ."""
         if spill_to_vreg is None:
-            return f"ldr {reg}, [sp, #STACK_LOC_{loc}]"
+            return f"ldr {reg}, [sp, #{prefix}_{loc}]"
         else:
             vreg_base = int(spill_to_vreg)
             return f"vmov {reg}, s{vreg_base+int(loc)}"

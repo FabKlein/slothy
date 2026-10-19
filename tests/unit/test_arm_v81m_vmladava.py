@@ -31,10 +31,10 @@ class VmladavaTests(unittest.TestCase):
     def test_illegal_accumulators_and_datatypes(self):
         for reg in range(1, 16, 2):
             with self.subTest(reg=reg):
-                with self.assertRaises(arch.Instruction.ParsingException):
+                with self.assertRaises(arch.ParsingException):
                     arch.vmladava.make(f"vmladava.s8 r{reg}, q0, q2")
         for datatype in ("i8", "s64", "f16"):
-            with self.assertRaises(arch.Instruction.ParsingException):
+            with self.assertRaises(arch.ParsingException):
                 arch.vmladava.make(f"vmladava.{datatype} r0, q0, q2")
 
     def test_symbolic_accumulator_restriction(self):

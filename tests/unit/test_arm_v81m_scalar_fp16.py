@@ -40,7 +40,7 @@ class ScalarFP16Tests(unittest.TestCase):
         self.assertEqual(inst.args_in, ["q0", "q7"])
 
     def test_scalar_vfma_rejects_unsupported_precision(self):
-        with self.assertRaises(arch.Instruction.ParsingException):
+        with self.assertRaises(arch.ParsingException):
             arch.vfma_scalar.make("vfma.f8 q1, q0, r4")
 
     def test_halfword_load_metadata_and_roundtrip(self):

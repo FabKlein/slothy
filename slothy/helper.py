@@ -33,7 +33,7 @@ import logging
 import inspect
 from abc import ABC, abstractmethod
 from sympy import simplify
-from slothy.targets.common import FatalParsingException, UnknownInstruction
+from slothy.targets.exceptions import FatalParsingException, UnknownInstruction
 
 from unicorn import Uc, UcError
 
@@ -48,9 +48,14 @@ class SourceLine:
     def _extract_comments_from_text(self):
         if "//" not in self._raw:
             return
-        s = list(self._raw.split("//"))
+        # Don't split block comments (they contain markers and may have // in content)
+        if _NEWLINE_MARKER in self._raw:
+            s = self._raw.split("//", 1)
+        else:
+            s = self._raw.split("//")
         self._raw = s[0]
-        self._comments += map(str.lstrip, s[1:])
+        # Preserve whitespace for block comments (with markers), lstrip others
+        self._comments += [c if _NEWLINE_MARKER in c else c.lstrip() for c in s[1:]]
         self._trim_comments()
 
     def _extract_indentation_from_text(self):
@@ -96,7 +101,10 @@ class SourceLine:
         return s
 
     def _strip_comments(self):
-        self._comments = list(map(str.lstrip, self._comments))
+        # Preserve whitespace for block comments (with markers), lstrip others
+        self._comments = [
+            c if _NEWLINE_MARKER in c else c.lstrip() for c in self._comments
+        ]
 
     def _trim_comments(self):
         self._strip_comments()
@@ -246,8 +254,7 @@ class SourceLine:
                 if _NEWLINE_MARKER in s:
                     # Restore as multi-line /* */ comment
                     lines = s.split(_NEWLINE_MARKER)
-                    lines = [line.strip() for line in lines]
-                    return "/* " + "\n   ".join(lines) + " */"
+                    return "/*" + "\n".join(lines) + "*/"
                 elif s.startswith(_BLOCK_COMMENT_MARKER):
                     # Restore as single-line /* */ comment
                     return f"/* {s[len(_BLOCK_COMMENT_MARKER):]} */"
@@ -375,9 +382,8 @@ class SourceLine:
                 content = match.group(1)
                 if "\n" in content:
                     # Multi-line /* */ comment - mark newlines
-                    content = content.replace("\n", f" {_NEWLINE_MARKER} ")
-                    content = " ".join(content.split())
-                    return f"// {content}" if content else ""
+                    content = content.replace("\n", _NEWLINE_MARKER)
+                    return f"//{content}" if content.strip() else ""
                 else:
                     # Single-line /* */ comment - mark with prefix
                     content = content.strip()
@@ -698,7 +704,8 @@ class AsmAllocation:
     # TODO: This is conceptionally different and should be
     # handled in its own class.
     _REGEXP_EQU_TXT = (
-        r"\s*\.equ\s+(?P<key>[A-Za-z0-9\_]+)\s*,\s*(?P<val>[A-Za-z0-9()*/+-]+)"
+        r"\s*\.equ\s+(?P<key>[_a-zA-Z][_a-zA-Z0-9]*)\s*,"
+        r"\s*(?P<val>[A-Za-z0-9()*/+\-\_\s]+)"
     )
 
     _REGEXP_REQ_TXT = r"\s*(?P<alias>\w+)\s+\.req\s+(?P<reg>\w+)"
@@ -1162,6 +1169,182 @@ class AsmIfElse:
         return output_lines
 
 
+def _unfold_directive(source, start_regexp, make_directive, unfold_func):
+    """Shared parser for .rept and .irp directives.
+
+    Args:
+        source: List of SourceLine objects
+        start_regexp: Compiled regex to match directive start
+        make_directive: Function(match, body) -> directive object with expand() method
+        unfold_func: The unfold_all function to call recursively
+
+    Returns:
+        List of SourceLine objects with directives expanded
+    """
+    assert SourceLine.is_source(source)
+
+    end_regexp = re.compile(r"^\s*\.endr\s*$")
+    nested_start = re.compile(r"^\s*\.(rept|irp)\s+")
+
+    output = []
+    state = 0  # 0: Not in directive, 1: In directive
+    current_match = None
+    current_body = None
+    nesting_level = 0
+
+    for line in source:
+        text = line.text if line.has_text() else ""
+
+        if state == 0:
+            match = start_regexp.match(text)
+            if match is None:
+                output.append(line)
+                continue
+            current_match = match
+            current_body = []
+            state = 1
+            nesting_level = 1
+            continue
+
+        if state == 1:
+            # Check for nested .rept/.irp
+            if nested_start.match(text):
+                nesting_level += 1
+                current_body.append(line)
+                continue
+
+            if end_regexp.match(text):
+                nesting_level -= 1
+                if nesting_level == 0:
+                    directive = make_directive(current_match, current_body)
+                    expanded = directive.expand()
+                    # Recursively process expanded content
+                    expanded = unfold_func(expanded)
+                    output.extend(expanded)
+                    state = 0
+                    current_match = None
+                    current_body = None
+                else:
+                    current_body.append(line)
+                continue
+
+            current_body.append(line)
+
+    return output
+
+
+class AsmRept:
+    """Helper class for parsing and expanding .rept directives"""
+
+    _START_REGEXP = re.compile(r"^\s*\.rept\s+(?P<count>\d+)\s*$")
+
+    def __init__(self, count, body):
+        self.count = count
+        self.body = body
+
+    def expand(self):
+        """Expand .rept directive into repeated lines"""
+        output = []
+        for i in range(self.count):
+            for line in self.body:
+                t = line.copy()
+
+                # Handle \+ substitution for iteration count
+                def apply_iteration(ll, iteration=i):
+                    if isinstance(ll, str):
+                        return ll.replace("\\+", str(iteration))
+                    return ll
+
+                t.transform_text(apply_iteration)
+                t.tags = {k: apply_iteration(v) for (k, v) in t.tags.items()}
+                output.append(t)
+        return output
+
+    @staticmethod
+    def _make_directive(match, body):
+        return AsmRept(int(match.group("count")), body)
+
+    @staticmethod
+    def unfold_all(source):
+        """Expand all .rept directives in assembly source"""
+        return _unfold_directive(
+            source, AsmRept._START_REGEXP, AsmRept._make_directive, AsmRept.unfold_all
+        )
+
+
+class AsmIrp:
+    """Helper class for parsing and expanding .irp directives"""
+
+    _START_REGEXP = re.compile(r"^\s*\.irp\s+(?P<symbol>\w+)\s*,\s*(?P<values>.+)$")
+
+    def __init__(self, symbol, values, body):
+        self.symbol = symbol
+        self.values = values
+        self.body = body
+
+    def expand(self):
+        """Expand .irp directive by substituting symbol with each value"""
+        output = []
+        for value in self.values:
+            for line in self.body:
+                t = line.copy()
+
+                def apply_value(ll, val=value, sym=self.symbol):
+                    if isinstance(ll, str):
+                        # Match \symbol followed by word boundary or end
+                        ll = re.sub(rf"\\{sym}(?=\W|$)", val, ll)
+                        return ll
+                    return ll
+
+                t.transform_text(apply_value)
+                t.tags = {k: apply_value(v) for (k, v) in t.tags.items()}
+                output.append(t)
+        return output
+
+    @staticmethod
+    def _make_directive(match, body):
+        symbol = match.group("symbol")
+        values = [v.strip() for v in match.group("values").split(",")]
+        return AsmIrp(symbol, values, body)
+
+    @staticmethod
+    def unfold_all(source):
+        """Expand all .irp directives in assembly source"""
+        return _unfold_directive(
+            source, AsmIrp._START_REGEXP, AsmIrp._make_directive, AsmIrp.unfold_all
+        )
+
+
+def unfold_all_directives(pre, body, inherit_comments=False):
+    """Unfold all macros, .rept, and .irp directives iteratively until stable.
+
+    This handles nested cases like macros inside .irp or .irp inside macros
+    by running all expansions in a loop until no more changes occur.
+
+    The order of expansion matters:
+    - .rept and .irp are expanded first so that macro arguments don't contain
+    backslash-prefixed symbols (like \\param) which would confuse macro expansion.
+    - Then macros are expanded on the clean output.
+    """
+    assert SourceLine.is_source(body)
+
+    while True:
+        # Capture text representation before expansion
+        old_text = [line.text if line.has_text() else "" for line in body]
+
+        # Run all expansions: directives first, then macros
+        body = AsmRept.unfold_all(body)
+        body = AsmIrp.unfold_all(body)
+        body = AsmMacro.unfold_all_macros(pre, body, inherit_comments=inherit_comments)
+
+        # Check if anything changed
+        new_text = [line.text if line.has_text() else "" for line in body]
+        if old_text == new_text:
+            break
+
+    return body
+
+
 class CPreprocessor:
     """Helper class for the application of the C preprocessor"""
 
@@ -1576,6 +1759,12 @@ class SelfTest:
                 initial_register_contents[r] = int.from_bytes(
                     os.urandom(16), byteorder="little"
                 )
+            # Apply user-specified fixed initial values (overrides random).
+            # Useful for registers that contribute to address computation
+            # (e.g. strides/offsets) but are not themselves address registers.
+            for reg, val in config.selftest_initial_register_values.items():
+                if reg in initial_register_contents:
+                    initial_register_contents[reg] = val
             for reg, sz in address_registers.items():
                 # allocate 2*sz and place pointer in the middle
                 # this makes sure that memory can be accessed at negative offsets
@@ -1819,7 +2008,8 @@ class Loop(ABC):
         :type forced_loop_type: any
         :return: The extracted loop.
         :rtype: any
-        :raises FatalParsingException: If loop with label lbl cannot be found.
+        :raises FatalParsingException: If loop with label lbl
+                cannot be found.
         """
         if forced_loop_type is not None:
             loop_types = [forced_loop_type]

@@ -66,7 +66,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     vmulf,
     vmulf_lane,
     vfmla_lane,
-    fcsel_dform,
+    fcsel,
     Q_Ld2_Lane_Post_Inc,
     vmla,
     vmla_lane,
@@ -120,7 +120,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     umull_wform,
     mul_wform,
     umaddl_wform,
-    lsr,
+    lsr_imm,
     bic,
     bic_reg,
     eor,
@@ -235,7 +235,7 @@ def add_slot_constraints(slothy):
     # )
     # fcsel and vld2 on slot 0 only
     # slothy.restrict_slots_for_instructions_by_class(
-    #     [fcsel_dform, Q_Ld2_Lane_Post_Inc], [0]
+    #     [fcsel, Q_Ld2_Lane_Post_Inc], [0]
     # )
     pass
 
@@ -384,7 +384,7 @@ execution_units = {
         umov_d,
         mov_d01,
         mov_b00,
-        fcsel_dform,
+        fcsel,
         VecToGprMov,
         Mov_xtov_d,
         fmov_s_form,  # from double/single to gen reg
@@ -449,7 +449,7 @@ execution_units = {
     ): ExecutionUnit.SCALAR_LOAD,
     (umull_wform, mul_wform, umaddl_wform): ExecutionUnit.SCALAR_MUL(),
     (
-        lsr,
+        lsr_imm,
         bic,
         bic_reg,
         bfi,
@@ -543,14 +543,14 @@ inverse_throughput = {
     vxtn: 1,
     vshrn: 2,
     vtbl: 1,  # N cycles (N = number of registers in the table)
-    (fcsel_dform): 1,
+    (fcsel): 1,
     (VecToGprMov, Mov_xtov_d): 1,
     (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
     (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
     (x_ldr_stack_imm, ldr_const): 1,
     (ldr_sxtw_wform): 3,
-    (lsr, lsr_wform, ror): 1,
+    (lsr_imm, lsr_wform, ror): 1,
     (umull_wform, mul_wform, umaddl_wform): 1,
     (Ldp_S,): 1,
     (Stp_S,): 1,
@@ -629,14 +629,14 @@ default_latencies = {
     (Ldp_S, Stp_S): 3,
     (Vins, umov_d): 2,
     (tst_wform): 1,
-    (fcsel_dform): 2,
+    (fcsel): 2,
     (VecToGprMov, Mov_xtov_d): 2,
     (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
     (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
     (x_ldr_stack_imm, ldr_const): 3,
     (ldr_sxtw_wform): 5,
-    (lsr, lsr_wform): 1,
+    (lsr_imm, lsr_wform): 1,
     (umull_wform, mul_wform, umaddl_wform): 3,
     (vuaddlv_sform): 3,
     (and_imm, and_imm_wform): 1,
@@ -691,14 +691,14 @@ def get_latency(src, out_idx, dst):
     latency = lookup_multidict(default_latencies, src, instclass_src)
 
     if (
-        instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel_dform]
+        instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel]
         and latency < 3
     ):
         latency += 1
 
     if [instclass_src, instclass_dst] in [
-        [lsr, mul_wform],
-        [lsr, umaddl_wform],
+        [lsr_imm, mul_wform],
+        [lsr_imm, umaddl_wform],
         [vbic, vusra],
         [vbic_imm_shifted, vusra],
     ]:

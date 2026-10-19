@@ -635,7 +635,12 @@ class Result(LockAttributes):
         def gen_restore(reg, loc, vis):
             args = self.config.constraints.spill_type
             yield SourceLine(
-                self.config.arch.Spill.restore(reg, loc, **args)
+                self.config.arch.Spill.restore(
+                    reg,
+                    loc,
+                    prefix=self.config.constraints.spill_stack_loc_prefix,
+                    **args,
+                )
             ).set_length(self.fixlen).set_comment(vis).add_tag(
                 "is_restore", True
             ).add_tag(
@@ -644,9 +649,16 @@ class Result(LockAttributes):
 
         def gen_spill(reg, loc, vis):
             args = self.config.constraints.spill_type
-            yield SourceLine(self.config.arch.Spill.spill(reg, loc, **args)).set_length(
-                self.fixlen
-            ).set_comment(vis).add_tag("is_spill", True).add_tag(
+            yield SourceLine(
+                self.config.arch.Spill.spill(
+                    reg,
+                    loc,
+                    prefix=self.config.constraints.spill_stack_loc_prefix,
+                    **args,
+                )
+            ).set_length(self.fixlen).set_comment(vis).add_tag(
+                "is_spill", True
+            ).add_tag(
                 "writes", f"stack_{loc}"
             )
 
@@ -1718,6 +1730,8 @@ class SlothyBase(LockAttributes):
 
         # - Objective
         self._add_objective()
+        # - Search strategy
+        self._add_search_strategy()
         self._result = Result(self.config)
 
         # Do the actual work
@@ -2373,12 +2387,12 @@ class SlothyBase(LockAttributes):
             s = spills.get(i, [])
             r = restores.get(i, [])
             for j in range(len(r)):
-                (reg, spill_id) = r[j]
+                reg, spill_id = r[j]
                 loc = spill_id_to_loc[spill_id]
                 free_locs.add(loc)
                 r[j] = (reg, loc)
             for j in range(len(s)):
-                (reg, spill_id) = s[j]
+                reg, spill_id = s[j]
                 loc = min(free_locs)
                 free_locs.remove(loc)
                 spill_id_to_loc[spill_id] = loc
@@ -2532,7 +2546,7 @@ class SlothyBase(LockAttributes):
                 cb().OnlyEnforceIf(bvar)
             return
 
-        assert len(cb_lst) == len(vars)
+        assert len(cb_lst) == len(bvars)
         for cb, bvar in zip(cb_lst, bvars):
             constraints = [bvar]
             if self._is_low(producer):
@@ -2957,7 +2971,7 @@ class SlothyBase(LockAttributes):
 
     def _iter_dependencies(self, with_virt=True, with_duals=True):
         def check_dep(t):
-            (consumer, producer, _, _) = t
+            consumer, producer, _, _ = t
             if with_virt:
                 yield t
             elif consumer in self._get_nodes() and producer.src in self._get_nodes():
@@ -2974,7 +2988,7 @@ class SlothyBase(LockAttributes):
             if with_duals is False:
                 continue
 
-            (consumer, producer, a, b) = t
+            consumer, producer, a, b = t
             if is_cross_iteration_dependency(producer, consumer):
                 yield from check_dep((consumer.sibling, producer.sibling(), a, b))
 
@@ -3009,7 +3023,7 @@ class SlothyBase(LockAttributes):
 
     def _iter_cross_iteration_dependencies(self):
         def is_cross_iteration_dependency(dep):
-            (consumer, producer, _, _, _, _, _) = dep
+            consumer, producer, _, _, _, _, _ = dep
             return self._is_low(producer.src) and self._is_high(consumer)
 
         yield from filter(
@@ -3881,7 +3895,7 @@ class SlothyBase(LockAttributes):
         r = self._stalls_to_stats(stalls)
         if r is None:
             return " (?)"
-        (cycles, ipc) = r
+        cycles, ipc = r
         return f" (Cycles ~ {cycles}, IPC ~ {ipc:.2f})"
 
     def _print_stalls_and_spills(self, bound, variables):
@@ -3898,7 +3912,7 @@ class SlothyBase(LockAttributes):
         r = self._stalls_to_stats(stalls)
         if r is None:
             return " (?)"
-        (cycles, ipc) = r
+        cycles, ipc = r
 
         if spills is not None:
             return f" (Cycles ~ {cycles}, IPC ~ {ipc:.2f}, Spills {spills})"
@@ -3985,6 +3999,22 @@ class SlothyBase(LockAttributes):
             self.logger.info("Objective: None (any satisfying solution is fine)")
             self._model.objective_name = "no objective"
 
+    def _add_search_strategy(self):
+        # See Config.solver_search_strategy for the rationale.
+        strategy = self.config.solver_search_strategy
+        if strategy == "auto":
+            return
+        var_strategy = {
+            "program_order": cp_model.CHOOSE_FIRST,
+            "lowest_min": cp_model.CHOOSE_LOWEST_MIN,
+        }[strategy]
+        position_vars = [t.program_start_var for t in self._get_nodes()]
+        if len(position_vars) == 0:
+            return
+        self._AddDecisionStrategy(
+            position_vars, var_strategy, cp_model.SELECT_MIN_VALUE
+        )
+
     #
     # Dummy wrappers around CP-SAT
     #
@@ -4000,7 +4030,7 @@ class SlothyBase(LockAttributes):
     def _init_external_model_and_solver(self):
         self._model.cp_model = cp_model.CpModel()
         self._model.cp_solver = cp_model.CpSolver()
-        self._model.cp_solver.random_seed = self.config.solver_random_seed
+        self._model.cp_solver.parameters.random_seed = self.config.solver_random_seed
 
     def _NewIntVar(self, minval, maxval, name=""):
         r = self._model.cp_model.NewIntVar(minval, maxval, name)
@@ -4051,6 +4081,11 @@ class SlothyBase(LockAttributes):
 
     def _AddMaxEquality(self, varlist, var):
         return self._model.cp_model.AddMaxEquality(varlist, var)
+
+    def _AddDecisionStrategy(self, varlist, var_strategy, value_strategy):
+        return self._model.cp_model.AddDecisionStrategy(
+            varlist, var_strategy, value_strategy
+        )
 
     def _export_model(self):
         if self.config.log_model is None:

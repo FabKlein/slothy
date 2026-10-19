@@ -134,6 +134,34 @@ class AArch64Example0Equ(OptimizationRunner):
         slothy.optimize(start="start", end="end")
 
 
+class AArch64Equ(OptimizationRunner):
+    def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
+        name = "aarch64_equ"
+        infile = name
+
+        super().__init__(
+            infile, name, rename=True, arch=arch, target=target, base_dir="tests"
+        )
+
+    def core(self, slothy):
+        slothy.config.variable_size = True
+        slothy.config.constraints.stalls_first_attempt = 32
+        slothy.config.outputs = [
+            "v0",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v6",
+            "v7",
+            "v8",
+            "v9",
+            "v10",
+        ]
+        slothy.optimize(start="start", end="end")
+
+
 class AArch64Example1(OptimizationRunner):
     def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
         name = "aarch64_simple0_macros"
@@ -181,6 +209,26 @@ class AArch64ExampleLdSt(OptimizationRunner):
         slothy.optimize()
 
 
+class AArch64ExampleImpossible(OptimizationRunner):
+    def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
+        name = "aarch64_impossible"
+        infile = name
+
+        super().__init__(
+            infile, name, rename=True, arch=arch, target=target, base_dir="tests"
+        )
+
+    def core(self, slothy):
+        slothy.config.constraints.stalls_maximum_attempt = 4
+        # slothy.config.variable_size = True
+
+        try:
+            slothy.optimize()
+        except Exception as exc:
+            if "No solution found" not in str(exc):
+                raise Exception("Test failed for wrong reason.")
+
+
 class AArch64Split0(OptimizationRunner):
     def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
         name = "aarch64_split0"
@@ -220,7 +268,9 @@ class AArch64IfElse(OptimizationRunner):
         )
 
     def core(self, slothy):
-        slothy.optimize()
+        slothy.optimize("start", "end")
+        slothy.config.inputs_are_outputs = True
+        slothy.optimize_loop("loop_start")
 
 
 class AArch64Ubfx(OptimizationRunner):
@@ -302,6 +352,126 @@ class AArch64CStyleComments(OptimizationRunner):
         slothy.optimize(start="start", end="end")
 
 
+class AArch64SelftestAddr(OptimizationRunner):
+    def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
+        name = "aarch64_selftest_addr"
+        infile = name
+
+        super().__init__(
+            infile, name, rename=True, arch=arch, target=target, base_dir="tests"
+        )
+
+    def core(self, slothy):
+        slothy.config.variable_size = True
+        slothy.config.constraints.stalls_first_attempt = 64
+        # Mark all vector and GPR outputs from loads
+        slothy.config.outputs = [
+            "v0",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v8",
+            "v9",
+            "v24",
+            "v25",
+            "v26",
+            "v27",
+            "v28",
+            "v29",  # vector loads
+            "x1",
+            "x21",
+            "x22",
+            "x23",
+            "x24",
+            "x25",
+            "x26",
+            "x27",
+            "x28",  # GPR loads
+        ]
+        slothy.optimize(start="start", end="end")
+
+
+class AArch64SelftestInitialRegs(OptimizationRunner):
+    """Tests selftest_initial_register_values.
+
+    The loop uses x2 as a stride that is added to the address registers x0/x1.
+    The selftest auto-detects x0/x1 as addresses but not x2, so without
+    pinning x2 to a small known value the derived addresses would quickly
+    leave the mapped RAM region.
+    """
+
+    def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
+        name = "aarch64_selftest_initial_regs"
+        super().__init__(
+            name, name, rename=True, arch=arch, target=target, base_dir="tests"
+        )
+
+    def core(self, slothy):
+        slothy.config.sw_pipelining.enabled = True
+        slothy.config.inputs_are_outputs = True
+        slothy.config.variable_size = True
+        slothy.config.reserved_regs = ["x3", "x30", "sp"]
+        # x0/x1 are address registers; x2 is a stride offset (not an address).
+        # Pin x2 to 8 so add x0,x0,x2 stays within the mapped RAM window.
+        slothy.config.selftest_initial_register_values = {"x2": 8}
+        slothy.optimize_loop("start")
+
+
+class AArch64Directives(OptimizationRunner):
+    def __init__(self, var="", arch=AArch64_Neon, target=Target_CortexA55):
+        name = "aarch64_directives"
+        infile = name
+
+        super().__init__(
+            infile, name, rename=True, arch=arch, target=target, base_dir="tests"
+        )
+
+    def core(self, slothy):
+        slothy.config.variable_size = True
+        slothy.config.inputs_are_outputs = True
+        slothy.config.constraints.stalls_first_attempt = 32
+
+        # Basic tests
+        slothy.optimize(start="start_rept", end="end_rept")  # 5 instructions
+        slothy.optimize(start="start_irp", end="end_irp")  # 3 instructions
+
+        # Macro/directive interaction
+        slothy.optimize(
+            start="start_irp_in_macro", end="end_irp_in_macro"
+        )  # 2 instructions
+        slothy.optimize(
+            start="start_macro_in_irp", end="end_macro_in_irp"
+        )  # 3 instructions
+
+        # .rept with \+ counter
+        slothy.optimize(
+            start="start_rept_counter", end="end_rept_counter"
+        )  # 3 instructions
+
+        # Nested directives
+        slothy.optimize(
+            start="start_nested_rept", end="end_nested_rept"
+        )  # 4 instructions
+        slothy.optimize(
+            start="start_rept_in_irp", end="end_rept_in_irp"
+        )  # 4 instructions
+        slothy.optimize(
+            start="start_irp_in_rept", end="end_irp_in_rept"
+        )  # 4 instructions
+
+        # Combined .rept counter and macro
+        slothy.optimize(
+            start="start_rept_macro_counter", end="end_rept_macro_counter"
+        )  # 3 instructions
+
+        # Edge cases
+        slothy.optimize(
+            start="start_rept_zero", end="end_rept_zero"
+        )  # 2 instructions (no .rept output)
+        slothy.optimize(start="start_irp_single", end="end_irp_single")  # 1 instruction
+
+
 test_instances = [
     Instructions(),
     Instructions(target=Target_CortexA72),
@@ -309,11 +479,13 @@ test_instances = [
     AArch64Example0(),
     AArch64Example0(target=Target_CortexA72),
     AArch64Example0Equ(),
+    AArch64Equ(),
     AArch64Example1(),
     AArch64Example1(target=Target_CortexA72),
     AArch64Example2(),
     AArch64Example2(target=Target_CortexA72),
     AArch64ExampleLdSt(),
+    AArch64ExampleImpossible(),
     AArch64IfElse(),
     AArch64Split0(),
     AArch64Aese(),
@@ -325,4 +497,7 @@ test_instances = [
     AArch64LoopBranch(),
     AArch64FusionVeor(),
     AArch64CStyleComments(),
+    AArch64SelftestAddr(),
+    AArch64SelftestInitialRegs(),
+    AArch64Directives(),
 ]

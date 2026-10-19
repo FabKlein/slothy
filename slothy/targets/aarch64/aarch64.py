@@ -119,6 +119,10 @@ class AArch64Multiply(AArch64Instruction):
     """Base class for scalar multiply instructions."""
 
 
+class AArch64CRC32(AArch64Instruction):
+    """Base class for scalar CRC32 instructions."""
+
+
 class Tst(AArch64Instruction):
     """Base class for test/compare instructions."""
 
@@ -182,6 +186,9 @@ def _apply_common_attributes(attrs: Dict[str, Any], spec: Dict[str, Any]):
     for field in ("inputs", "outputs", "in_outs"):
         if field in spec:
             attrs[field] = spec[field]
+    for field in ("dependsOnFlags", "modifiesFlags"):
+        if field in spec:
+            attrs[field] = str(spec[field]).lower() == "true"
 
 
 SPEC_PATH = Path(__file__).with_name("aarch64_scalar_instructions.json")
@@ -206,6 +213,7 @@ BASE_EXPORTS: List[str] = [
     "AArch64Move",
     "AArch64HighMultiply",
     "AArch64Multiply",
+    "AArch64CRC32",
     "Tst",
 ]
 
@@ -224,4 +232,8 @@ for entry in INSTRUCTION_SPECS:
     GENERATED_EXPORTS.append(name)
 
 
-__all__ = BASE_EXPORTS + GENERATED_EXPORTS
+# Preserve the old public names while using upstream's canonical class names.
+lsr_variable = lsr
+csel_ne = csel
+
+__all__ = BASE_EXPORTS + GENERATED_EXPORTS + ["lsr_variable", "csel_ne"]

@@ -34,6 +34,7 @@ smaller-sizes problems amenable to one-shot SLOTHY.
 """
 
 import math
+from pathlib import Path
 
 from slothy.core.dataflow import DataFlowGraph as DFG
 from slothy.core.dataflow import Config as DFGConfig, ComputationNode
@@ -108,17 +109,22 @@ class Heuristics:
             conf.log(logger.error)
 
             err_file = conf.log_dir + f"/{logger_name}_ERROR.s"
+
+            Path(conf.log_dir).mkdir(parents=True, exist_ok=True)
             with open(err_file, "w", encoding="utf-8") as f:
                 conf.log(lambda line: f.write("// " + line + "\n"))
-                f.write("\n".join(source))
+                f.write("\n".join([line.to_string() for line in source]))
 
             logger.error(f"Stored this information in {err_file}")
+            raise SlothyException("No solution found.")
 
     @staticmethod
-    def optimize_binsearch(source: list, logger: any, conf: any, **kwargs: any) -> any:
+    def optimize_binsearch(  # noqa: DOC103
+        source: list, logger: any, conf: any, **kwargs: any
+    ) -> any:
         """Optimize for minimum number of stalls, and potentially a secondary objective.
 
-        The `variable_size` configuration option determines whether the minimiation of
+        The `variable_size` configuration option determines whether the minimization of
         stalls happens internally or externally. Internal minimization means that the
         number of stalls is part of the model, and its minimization registered as the
         objective to the underlying solver. External minimization means that the number
@@ -128,17 +134,19 @@ class Heuristics:
         :param source: The source code to be optimized. Must be a list of
             SourceLine instances.
         :type source: list
-        :param logger: The logger to be used
+        :param logger: The logger to be used.
         :type logger: any
-        :param conf: The configuration to apply. This fixed for all one-shot SLOTHY
+        :param conf: The configuration to apply. This is fixed for all one-shot SLOTHY
             runs invoked by this call, except for the variation of the stall count.
         :type conf: any
-        :param **kwargs: An optional list of parameters to the core optimize routine
-        :type **kwargs: any
-        :returns: The Result object for the succeeding optimization with the smallest
-                  number of stalls.
+        :param ``**kwargs``: An optional list of parameters to the core optimize routine.
+        :type ``**kwargs``: any
+
+        :return: The Result object for the succeeding optimization with the smallest
+            number of stalls.
         :rtype: any
         """
+
         flexible = not conf.constraints.functional_only
 
         if conf.variable_size:
@@ -171,8 +179,12 @@ class Heuristics:
         )
 
     @staticmethod
-    def optimize_binsearch_external(
-        source: list, logger: any, conf: any, flexible: bool = True, **kwargs: any
+    def optimize_binsearch_external(  # noqa: DOC103
+        source: list,
+        logger: any,
+        conf: any,
+        flexible: bool = True,
+        **kwargs: any,
     ) -> any:
         """Externally optimize for minimum number of stalls, and potentially a secondary
         objective.
@@ -181,7 +193,6 @@ class Heuristics:
         for which a one-shot SLOTHY optimization succeeds. If the provided configuration
         has a secondary objective, it then re-optimizes the result for that secondary
         objective, fixing the minimal number of stalls.
-
 
         :param source: The source code to be optimized. Must be a list of SourceLine
             instances.
@@ -196,8 +207,9 @@ class Heuristics:
             for a fixed number of stalls (encoded in the configuration) should be
             conducted.
         :type flexible: bool
-        :param **kwargs: An optional list of parameters to the core optimize routine
-        :type **kwargs: any
+        :param ``**kwargs``: An optional list of parameters to the core optimize routine.
+        :type ``**kwargs``: any
+
         :return: A Result object representing the final optimization result.
         :rtype: any
         :raises SlothyException: If optimization fails.
@@ -236,22 +248,25 @@ class Heuristics:
         return core.result
 
     @staticmethod
-    def optimize_binsearch_internal(
-        source: list, logger: any, conf: any, flexible: bool = True, **kwargs: any
+    def optimize_binsearch_internal(  # noqa: DOC103
+        source: list,
+        logger: any,
+        conf: any,
+        flexible: bool = True,
+        **kwargs: any,
     ) -> any:
         """Internally optimize for minimum number of stalls, and potentially a secondary
         objective.
 
         This finds the minimum number of stalls for which a one-shot SLOTHY optimization
-        succeeds.
-        If the provided configuration has a secondary objective, it then re-optimizes the
-        result for that secondary objective, fixing the minimal number of stalls.
-
+        succeeds. If the provided configuration has a secondary objective, it then
+        re-optimizes the result for that secondary objective, fixing the minimal number
+        of stalls.
 
         :param source: The source code to be optimized. Must be a list of SourceLine
             instances.
         :type source: list
-        :param  logger: The logger to be used.
+        :param logger: The logger to be used.
         :type logger: any
         :param conf: The configuration to apply. This is fixed for all one-shot SLOTHY
             runs invoked by this call, except for variation of stall count.
@@ -261,11 +276,12 @@ class Heuristics:
             for a fixed number of stalls (encoded in the configuration) should be
             conducted.
         :type flexible: bool
-        :param **kwargs: An optional list of parameters to the core optimize routine
-        :type **kwargs: any
+        :param ``**kwargs``: An optional list of parameters to the core optimize routine.
+        :type ``**kwargs``: any
+
         :return: A Result object representing the final optimization result.
         :rtype: any
-        : raises SlothyException: If optimization fails.
+        :raises SlothyException: If optimization fails.
         """
 
         if not flexible:
@@ -336,7 +352,6 @@ class Heuristics:
         `B`. The straightline optimizations applied in this heuristics are
         done via Heuristics.linear() and thus themselves subject to the
         splitting heuristic, if enabled.
-
 
         :param body: The loop body to be optimized. This must be a list of
             SourceLine instances.
@@ -442,6 +457,7 @@ class Heuristics:
         :param conf: The configuration to be applied. Software pipelining must be
             disabled.
         :type conf: any
+
         :return: A Result object representing the final optimization result.
         :rtype: any
         :raises SlothyException: If software pipelining is enabled.
@@ -945,14 +961,21 @@ class Heuristics:
             conf2.constraints.allow_renaming = False
             conf2.constraints.allow_reordering = False
             conf2.variable_size = True
-            stall_res = Heuristics.optimize_binsearch(
-                res.code, logger.getChild("split_estimtate_perf"), conf2
-            )
-            if stall_res.success is False:
-                log.error(
-                    "Stall-estimate for final code after split heuristic failed"
-                    " -- should not happen? Maybe increase timeout?"
-                    " Just returning the result without stall-estimate."
+            conf2.timeout = None
+            conf2.retry_timeout = None
+            stall_res = None
+            try:
+                stall_res = Heuristics.optimize_binsearch(
+                    res.code, logger.getChild("split_estimate_perf"), conf2
+                )
+            except SlothyException:
+                pass
+
+            if stall_res is None or stall_res.success is False:
+                log.warning(
+                    "Stall-estimate for final code after split heuristic"
+                    " failed -- returning the optimized result without"
+                    " stall-estimate."
                 )
             else:
                 res2 = Result(conf2)
