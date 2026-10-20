@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import html
 import json
 from pathlib import Path
 
@@ -16,7 +17,9 @@ def _normalize_row(row):
 
 def parse_table(table_path: Path):
     with table_path.open(encoding="utf8") as f:
-        reader = csv.reader(f, delimiter="|")
+        reader = csv.reader(
+            (line for line in f if line.lstrip().startswith("|")), delimiter="|"
+        )
         raw_rows = [_normalize_row(row) for row in reader]
 
     raw_rows = [row for row in raw_rows if any(cell for cell in row)]
@@ -32,6 +35,7 @@ def parse_table(table_path: Path):
         for key, value in zip(header, row):
             if value == "":
                 continue
+            value = html.unescape(value)
             try:
                 inst[key] = json.loads(value)
             except json.JSONDecodeError:

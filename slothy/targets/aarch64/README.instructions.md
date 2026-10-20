@@ -15,6 +15,32 @@ Existing class names, modules, inheritance, and aliases are preserved, including
 `vfmul = vmulf`, `lsr_variable = lsr`, and `csel_ne = csel`.
 Both JSON files are included in built packages.
 
+## Generated reference tables
+
+JSON is the source of truth. The readable tables
+[aarch64_scalar_inst.md](aarch64_scalar_inst.md) and
+[aarch64_neon_inst.md](aarch64_neon_inst.md) are generated documentation;
+do not edit them by hand. They show only explicit JSON fields, not inherited
+metadata, Python-only definitions, or CPU timings.
+
+After changing either specification, regenerate both tables from the repository root:
+
+```sh
+python3 slothy/targets/aarch64/dump_instruction_tables.py
+```
+
+Check that the committed tables are up to date without modifying them:
+
+```sh
+python3 slothy/targets/aarch64/dump_instruction_tables.py --check
+```
+
+Unit tests also check that both tables match the generator. Generation is not
+performed automatically when importing Slothy. The legacy `dump_scalar_inst.py`
+still prints the scalar table to stdout. `load_scalar_table.py` remains a legacy
+reverse-import utility, not the normal editing workflow; it overwrites the JSON
+and should not be run against a stale table.
+
 ## Adding a simple instruction
 
 Add an entry to the relevant JSON file; no matching Python class is needed:
@@ -139,7 +165,7 @@ When extending an instruction:
 2. Add the relevant CPU model entries and check for overlapping family matches.
 3. Test parsing/writing, register and flag dependencies, and address fixups.
 4. Test scheduling and assembler acceptance; use execution tests where available.
-5. For scalar changes, keep `aarch64_scalar_inst.md` consistent with the JSON.
+5. Regenerate both reference tables after changing either JSON specification.
 
 ## Regression checks
 
