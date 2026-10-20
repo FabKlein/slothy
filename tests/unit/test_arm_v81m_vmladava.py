@@ -40,7 +40,9 @@ class VmladavaTests(unittest.TestCase):
     def test_symbolic_accumulator_restriction(self):
         inst = parse("vmladava.s8 r<acc>, q<row>, q<column>")
         self.assertEqual(inst.args_in_out, ["acc"])
-        self.assertEqual(inst.args_in_out_restrictions[0], [f"r{i}" for i in range(0, 15, 2)])
+        self.assertEqual(
+            inst.args_in_out_restrictions[0], [f"r{i}" for i in range(0, 15, 2)]
+        )
 
     def test_m55_timing(self):
         inst = parse("vmladava.s8 r0, q0, q2")
@@ -52,16 +54,25 @@ class VmladavaTests(unittest.TestCase):
     def test_assembler_accepts_even_and_rejects_odd_accumulator(self):
         with tempfile.TemporaryDirectory() as tmp:
             command = [
-                "clang-19", "--target=arm-none-eabi", "-mcpu=cortex-m55",
-                "-mfloat-abi=hard", "-mthumb", "-x", "assembler", "-c", "-",
-                "-o", str(Path(tmp) / "dot.o"),
+                "clang-19",
+                "--target=arm-none-eabi",
+                "-mcpu=cortex-m55",
+                "-mfloat-abi=hard",
+                "-mthumb",
+                "-x",
+                "assembler",
+                "-c",
+                "-",
+                "-o",
+                str(Path(tmp) / "dot.o"),
             ]
             for reg in range(16):
                 with self.subTest(reg=reg):
                     result = subprocess.run(
                         command,
                         input=f".syntax unified\n.thumb\nvmladava.s8 r{reg}, q0, q2\n",
-                        text=True, capture_output=True,
+                        text=True,
+                        capture_output=True,
                     )
                     self.assertEqual(result.returncode == 0, reg % 2 == 0)
 

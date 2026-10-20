@@ -407,12 +407,8 @@ execution_units = {
     vqdmulh_vv: ExecutionUnit.VEC_MUL,
     vqdmulh_sv: ExecutionUnit.VEC_MUL,
     vmla: ExecutionUnit.VEC_MUL,
-    vfma: [
-        [ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]
-    ],
-    vfms: [
-        [ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]
-    ],
+    vfma: [[ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]],
+    vfms: [[ExecutionUnit.VEC_FPMUL, ExecutionUnit.VEC_FPADD]],
     vmulf_T1: ExecutionUnit.VEC_FPMUL,
     vmulf_T2: ExecutionUnit.VEC_FPMUL,
     ldrd: ExecutionUnit.LOAD,
@@ -720,7 +716,7 @@ default_latencies = {
         vshr,
         vshl,
         vshl_T3,
-        #vshlc,
+        # vshlc,
         vrev16,
         vrev32,
         vrev64,

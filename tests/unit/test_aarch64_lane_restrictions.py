@@ -65,7 +65,10 @@ class LaneRestrictionTests(unittest.TestCase):
             for uppercase in (False, True):
                 source = f"{mnemonic} v0.{dest}, v31.{src}, v15.{element}[0]"
                 if uppercase:
-                    source = f"{mnemonic} v0.{dest.upper()}, v31.{src.upper()}, v15.{element.upper()}[0]"
+                    source = (
+                        f"{mnemonic} v0.{dest.upper()}, v31.{src.upper()}, "
+                        f"v15.{element.upper()}[0]"
+                    )
                 with self.subTest(source=source):
                     inst = parse(source)
                     name = class_name(mnemonic)

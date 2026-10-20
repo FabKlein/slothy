@@ -1865,9 +1865,7 @@ def _expand_vfp_scalar_registers(spec):
             start = _parse_vfp_scalar_name(bounds[0])
             end = _parse_vfp_scalar_name(bounds[1])
             if end < start:
-                raise ParsingException(
-                    "v[ls]dm register ranges must be ascending"
-                )
+                raise ParsingException("v[ls]dm register ranges must be ascending")
             regs.extend(range(start, end + 1))
         else:
             regs.append(_parse_vfp_scalar_name(part))
@@ -1997,9 +1995,7 @@ class _vstm_base(MVEInstruction):
                 start = cls._parse_scalar_name(bounds[0])
                 end = cls._parse_scalar_name(bounds[1])
                 if end < start:
-                    raise ParsingException(
-                        "vstm register ranges must be ascending"
-                    )
+                    raise ParsingException("vstm register ranges must be ascending")
                 regs.extend(range(start, end + 1))
             else:
                 regs.append(cls._parse_scalar_name(part))

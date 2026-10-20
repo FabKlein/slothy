@@ -175,7 +175,7 @@ GENERATED_EXPORTS = generate_instruction_classes(
 
 
 # Preserve the old public names while using upstream's canonical class names.
-lsr_variable = lsr
-csel_ne = csel
+lsr_variable = globals()["lsr"]
+csel_ne = globals()["csel"]
 
 __all__ = BASE_EXPORTS + GENERATED_EXPORTS + ["lsr_variable", "csel_ne"]

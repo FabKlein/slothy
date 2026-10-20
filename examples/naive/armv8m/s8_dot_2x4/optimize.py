@@ -73,14 +73,21 @@ def main():
     body = source.split("start:\n", 1)[1].split("body_end:\n", 1)[0]
     baseline = schedule(body, False, args.timeout)
     optimized = schedule(body, True, args.timeout)
-    header = source.split("start:\n", 1)[0].replace(
-        "// Initial count must be >=16 here; count%16 remains on exit. No partial tail.",
-        "// Any unsigned count: process full blocks, leave count%16. No partial tail.",
-    ).replace("// Scratch q0-q5, NZCV.", "// Scratch q0-q7, NZCV.")
+    header = (
+        source.split("start:\n", 1)[0]
+        .replace(
+            "// Initial count must be >=16 here; count%16 remains on exit. "
+            "No partial tail.",
+            "// Any unsigned count: process full blocks, leave count%16. "
+            "No partial tail.",
+        )
+        .replace("// Scratch q0-q5, NZCV.", "// Scratch q0-q7, NZCV.")
+    )
     stats = (
         f"// Original body: {baseline.cycles} estimated cycles per 16-byte block.\n"
         f"// SWP unroll x2: {optimized.cycles} estimated cycles per 32-byte pair "
-        f"({optimized.cycles / 2:g} per original block); bound {optimized.cycles_bound}.\n"
+        f"({optimized.cycles / 2:g} per original block); "
+        f"bound {optimized.cycles_bound}.\n"
         f"// Early instructions: {optimized.num_pre}; exceptional pairs: "
         f"{optimized.num_exceptional_iterations}.\n"
         "// Estimates exclude scalar loop control, setup, drain and tail costs.\n"

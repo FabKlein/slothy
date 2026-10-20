@@ -835,7 +835,6 @@ def get_latency(src, out_idx, dst):
 def get_units(src):
     instclass_src = find_class(src)
     units = lookup_multidict(execution_units, src, instclass_src)
-    # print(src, instclass_src, units, lookup_multidict(inverse_throughput, src, instclass_src), lookup_multidict(default_latencies, src, instclass_src))
     if isinstance(units, list):
         return units
     return [units]

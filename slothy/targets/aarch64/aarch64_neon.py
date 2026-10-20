@@ -777,8 +777,14 @@ class Instruction:
         """Indicates if an instruction is a Neon store instruction"""
         return self._is_instance_of(
             [
-                Str_Q, Stp_Q, St2, St3, St4,
-                d_stp_stack_with_inc, d_str_stack_with_inc, q_st1_4_with_postinc,
+                Str_Q,
+                Stp_Q,
+                St2,
+                St3,
+                St4,
+                d_stp_stack_with_inc,
+                d_str_stack_with_inc,
+                q_st1_4_with_postinc,
             ]
         )
 
@@ -892,9 +898,7 @@ class Instruction:
             try:
                 inst = inst_class.make(src)
                 if inst is None:
-                    raise ParsingException(
-                        f"{inst_class.__name__} returned None"
-                    )
+                    raise ParsingException(f"{inst_class.__name__} returned None")
                 instnames = [inst_class.__name__]
                 insts = [inst]
                 break
@@ -1509,6 +1513,7 @@ class q_ld2_lane_s(AArch64Instruction):
         ]
         return obj
 
+
 class Q_Ld2_Lane_Post_Inc(AArch64Instruction):
     pass
 
@@ -1985,6 +1990,7 @@ class w_ldrb_imm(Ldr_X):
         obj.addr = obj.args_in[0]
         return obj
 
+
 class w_ldrb(Ldr_X):
     pattern = "ldrb <Wa>, [<Xc>]"
     inputs = ["Xc"]
@@ -2004,8 +2010,10 @@ class w_ldrb(Ldr_X):
             self.pattern = w_ldrb_imm.pattern
         return super().write()
 
+
 class Ldp_W(AArch64Instruction):
     pass
+
 
 class w_ldp_imm(Ldp_W):
     pattern = "ldp <Wa>, <Wb>, [<Xc>, <imm>]"
@@ -2019,6 +2027,7 @@ class w_ldp_imm(Ldp_W):
         obj.pre_index = None
         obj.addr = obj.args_in[0]
         return obj
+
 
 class w_ldp(Ldp_W):
     pattern = "ldp <Wa>, <Wb>, [<Xc>]"
@@ -2038,6 +2047,7 @@ class w_ldp(Ldp_W):
             self.immediate = simplify(self.pre_index)
             self.pattern = w_ldp_imm.pattern
         return super().write()
+
 
 class Ldp_X(AArch64Instruction):
     pass
@@ -3043,6 +3053,14 @@ _NEON_SPECS = _read_instruction_specs(
     _Path(__file__).with_name("aarch64_neon_instructions.json")
 )
 _generate_instruction_classes(_NEON_SPECS, globals(), AArch64Instruction)
+
+# These classes are installed in this module by the JSON loader above.
+vmulf = globals()["vmulf"]
+vins_d = globals()["vins_d"]
+veor = globals()["veor"]
+veor3 = globals()["veor3"]
+vmla = globals()["vmla"]
+vmls = globals()["vmls"]
 
 # Preserve the public FP multiply alias used by external target models.
 vfmul = vmulf

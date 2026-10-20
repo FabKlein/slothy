@@ -444,7 +444,14 @@ execution_units = {
         [ExecutionUnit.VEC0, ExecutionUnit.VEC1]
     ],
     is_dform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
-    (Stp_X, Stp_W, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
+    (
+        Stp_X,
+        Stp_W,
+        w_stp_with_imm_sp,
+        x_str_sp_imm,
+        Str_X,
+        Stp_S,
+    ): ExecutionUnit.SCALAR_STORE,
     (
         ldr_const,
         ldr_sxtw_wform,

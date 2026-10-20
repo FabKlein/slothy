@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 import unittest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 NAIVE = ROOT / "examples/naive/armv8m/s8_dot_2x4/s8_dot_2x4_cm55.s"
 OPT = ROOT / "examples/opt/armv8m/s8_dot_2x4/s8_dot_2x4_cm55_swpipe_u2.s"
@@ -45,11 +44,13 @@ def run_model(source, initial, buffers):
             addr = regs[r]
             if not 0 <= addr <= len(buffers[r]) - 16:
                 raise AssertionError(f"Out-of-bounds load: {line} at {addr}")
-            vectors[q] = buffers[r][addr:addr + 16]
+            vectors[q] = buffers[r][addr : addr + 16]
             regs[r] += 16
         elif dot:
             r, qn, qm = map(int, dot.groups())
-            regs[r] = (regs[r] + sum(a * b for a, b in zip(vectors[qn], vectors[qm]))) & MASK
+            regs[r] = (
+                regs[r] + sum(a * b for a, b in zip(vectors[qn], vectors[qm]))
+            ) & MASK
         elif sub:
             regs[7] = (regs[7] - int(sub[1])) & MASK
         elif cmp:
@@ -80,16 +81,21 @@ class S8DotLoopTests(unittest.TestCase):
                     expected = initial.copy()
                     for block in range(blocks):
                         for column in range(4):
-                            weights = buffers[5][block * 64 + column * 16:][:16]
+                            weights = buffers[5][block * 64 + column * 16 :][:16]
                             for row, ptr in enumerate((1, 3)):
                                 acc = ACCUMULATORS[2 * column + row]
-                                values = buffers[ptr][block * 16:][:16]
+                                values = buffers[ptr][block * 16 :][:16]
                                 expected[acc] = (
-                                    expected[acc] + sum(a * b for a, b in zip(values, weights))
+                                    expected[acc]
+                                    + sum(a * b for a, b in zip(values, weights))
                                 ) & MASK
-                    expected.update({1: blocks * 16, 3: blocks * 16, 5: blocks * 64, 7: count % 16})
+                    expected.update(
+                        {1: blocks * 16, 3: blocks * 16, 5: blocks * 64, 7: count % 16}
+                    )
                     self.assertEqual(run_model(optimized, initial, buffers), expected)
-                    if count >= 16:  # The original do/while loop requires one full block.
+                    if (
+                        count >= 16
+                    ):  # The original do/while loop requires one full block.
                         self.assertEqual(run_model(naive, initial, buffers), expected)
 
     @unittest.skipUnless(shutil.which("clang-19"), "Clang 19 required")
@@ -97,9 +103,18 @@ class S8DotLoopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             for source in (NAIVE, OPT):
                 subprocess.run(
-                    ["clang-19", "--target=arm-none-eabi", "-mcpu=cortex-m55",
-                     "-mfloat-abi=hard", "-mthumb", "-c", str(source),
-                     "-o", str(Path(tmp) / "loop.o")], check=True,
+                    [
+                        "clang-19",
+                        "--target=arm-none-eabi",
+                        "-mcpu=cortex-m55",
+                        "-mfloat-abi=hard",
+                        "-mthumb",
+                        "-c",
+                        str(source),
+                        "-o",
+                        str(Path(tmp) / "loop.o"),
+                    ],
+                    check=True,
                 )
 
 
