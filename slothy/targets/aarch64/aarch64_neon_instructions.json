@@ -1,0 +1,1286 @@
+{
+  "schema_version": 1,
+  "instructions": [
+    {
+      "name": "fmov_w_to_s",
+      "base": "Fmov",
+      "pattern": "fmov <Sd>, <Wa>",
+      "inputs": ["Wa"],
+      "outputs": ["Sd"]
+    },
+    {
+      "name": "sfadd_d",
+      "base": "AArch64Instruction",
+      "pattern": "fadd <Dd>, <Da>, <Db>",
+      "inputs": ["Da", "Db"],
+      "outputs": ["Dd"]
+    },
+    {
+      "name": "vadd",
+      "base": "AArch64Instruction",
+      "pattern": "add <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": [
+        "Vb",
+        "Vc"
+      ],
+      "outputs": [
+        "Va"
+      ]
+    },
+    {
+      "name": "vaddf",
+      "base": "AArch64Instruction",
+      "pattern": "fadd <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": [
+        "Vb",
+        "Vc"
+      ],
+      "outputs": [
+        "Va"
+      ]
+    },
+    {
+      "name": "vsub",
+      "base": "AArch64Instruction",
+      "pattern": "sub <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": [
+        "Vb",
+        "Vc"
+      ],
+      "outputs": [
+        "Va"
+      ]
+    },
+    {
+      "name": "vmov",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmovi",
+      "base": "AArch64Instruction",
+      "pattern": "movi <Vd>.<dt>, <imm>",
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vxtn",
+      "base": "AArch64Instruction",
+      "pattern": "xtn <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "rev64",
+      "base": "Vrev",
+      "pattern": "rev64 <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "rev32",
+      "base": "Vrev",
+      "pattern": "rev32 <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "uaddlp",
+      "base": "AArch64Instruction",
+      "pattern": "uaddlp <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vzip1",
+      "base": "Vzip",
+      "pattern": "zip1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vzip2",
+      "base": "Vzip",
+      "pattern": "zip2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vuzp1",
+      "base": "Vzip",
+      "pattern": "uzp1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vuzp2",
+      "base": "Vzip",
+      "pattern": "uzp2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vqrdmulh_lane",
+      "base": "Vqdmulh",
+      "pattern": "sqrdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vqdmulh_lane",
+      "base": "Vqdmulh",
+      "pattern": "sqdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vqrdmulh",
+      "base": "Vqdmulh",
+      "pattern": "sqrdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vqdmulh_vector",
+      "base": "Vqdmulh",
+      "pattern": "sqdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vins_d",
+      "base": "Vins",
+      "pattern": "ins <Vd>.d[<index>], <Xa>",
+      "inputs": [
+        "Xa"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vcnt",
+      "base": "AArch64NeonCount",
+      "pattern": "cnt <Vd>.<dt>, <Va>.<dt>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vclz",
+      "base": "AArch64NeonCount",
+      "pattern": "clz <Vd>.<dt>, <Va>.<dt>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_wtov_s",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Vd>.s[<index>], <Wa>",
+      "inputs": [
+        "Wa"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_xtov_d",
+      "base": "Mov_xtov_d",
+      "pattern": "mov <Vd>.d[<index>], <Xa>",
+      "inputs": [
+        "Xa"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_xtov_d_xzr",
+      "base": "Mov_xtov_d",
+      "pattern": "mov <Vd>.d[<index>], xzr",
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_b00",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Vd>.b[0], <Va>.b[0]",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_d01",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Vd>.d[0], <Va>.d[1]",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "mov_vtov_d",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Vd>.d[<index0>], <Va>.d[<index1>]",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vrax1",
+      "base": "SHA3Instruction",
+      "pattern": "rax1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "veor3",
+      "base": "SHA3Instruction",
+      "pattern": "eor3 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb",
+        "Vc"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vbcax",
+      "base": "SHA3Instruction",
+      "pattern": "bcax <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb",
+        "Vc"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vxar",
+      "base": "SHA3Instruction",
+      "pattern": "xar <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vtbl",
+      "base": "AArch64Instruction",
+      "pattern": "tbl <Vd>.<dt>, {<Va>.<dt>}, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vand",
+      "base": "AArch64NeonLogical",
+      "pattern": "and <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vbic",
+      "base": "AArch64NeonLogical",
+      "pattern": "bic <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vbic_imm_shifted",
+      "base": "AArch64NeonLogical",
+      "pattern": "bic <Vda>.<dt>, <imm0>, <barrel> <imm1>",
+      "in_outs": [
+        "Vda"
+      ]
+    },
+    {
+      "name": "vmvn",
+      "base": "AArch64NeonLogical",
+      "pattern": "mvn <Vd>.<dt>, <Va>.<dt>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vorr",
+      "base": "AArch64NeonLogical",
+      "pattern": "orr <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vorr_imm",
+      "base": "AArch64NeonLogical",
+      "pattern": "orr <Vda>.<dt>, <imm>",
+      "in_outs": [
+        "Vda"
+      ]
+    },
+    {
+      "name": "vorn",
+      "base": "AArch64NeonLogical",
+      "pattern": "orn <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "veor",
+      "base": "AArch64NeonLogical",
+      "pattern": "eor <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vbif",
+      "base": "AArch64Instruction",
+      "pattern": "bif <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmov_d",
+      "base": "AArch64Instruction",
+      "pattern": "mov <Dd>, <Va>.d[1]",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Dd"
+      ]
+    },
+    {
+      "name": "vext",
+      "base": "AArch64Instruction",
+      "pattern": "ext <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmul",
+      "base": "Vmul",
+      "pattern": "mul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmulf",
+      "base": "Vmul",
+      "pattern": "fmul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmla",
+      "base": "Vmla",
+      "pattern": "mla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vfmla",
+      "base": "vmla",
+      "pattern": "fmla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
+    },
+    {
+      "name": "vmls",
+      "base": "Vmla",
+      "pattern": "mls <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vfmls",
+      "base": "vmls",
+      "pattern": "fmls <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
+    },
+    {
+      "name": "vdup",
+      "base": "AArch64Instruction",
+      "pattern": "dup <Vd>.<dt>, <Xa>",
+      "inputs": [
+        "Xa"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vdup_w",
+      "base": "AArch64Instruction",
+      "pattern": "dup <Vd>.<dt>, <Wa>",
+      "inputs": [
+        "Wa"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumull",
+      "base": "Vmull",
+      "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumull2",
+      "base": "Vmull",
+      "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmull",
+      "base": "Vmull",
+      "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmull2",
+      "base": "Vmull",
+      "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumlal",
+      "base": "Vmlal",
+      "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumlal2",
+      "base": "Vmlal",
+      "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmlal",
+      "base": "Vmlal",
+      "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmlal2",
+      "base": "Vmlal",
+      "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumlsl",
+      "base": "Vmlal",
+      "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vumlsl2",
+      "base": "Vmlal",
+      "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmlsl",
+      "base": "Vmlal",
+      "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsmlsl2",
+      "base": "Vmlal",
+      "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vshl",
+      "base": "VShiftImmediateBasic",
+      "pattern": "shl <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vshl_d",
+      "base": "VShiftImmediateBasic",
+      "pattern": "shl <Dd>, <Da>, <imm>",
+      "inputs": [
+        "Da"
+      ],
+      "outputs": [
+        "Dd"
+      ]
+    },
+    {
+      "name": "vshrn",
+      "base": "VShiftImmediateBasic",
+      "pattern": "shrn <Vd>.<dt0>, <Va>.<dt1>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsshr",
+      "base": "VShiftImmediateBasic",
+      "pattern": "sshr <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vushr",
+      "base": "VShiftImmediateBasic",
+      "pattern": "ushr <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vuxtl",
+      "base": "VShiftImmediateBasic",
+      "pattern": "uxtl <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsrshr",
+      "base": "VShiftImmediateRounding",
+      "pattern": "srshr <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vurshr",
+      "base": "VShiftImmediateRounding",
+      "pattern": "urshr <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vushl_reg",
+      "base": "VShiftRegBasic",
+      "pattern": "ushl <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsli",
+      "base": "AArch64NeonShiftInsert",
+      "pattern": "sli <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vsri",
+      "base": "AArch64NeonShiftInsert",
+      "pattern": "sri <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vusra",
+      "base": "AArch64Instruction",
+      "pattern": "usra <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "vmul_lane",
+      "base": "Vmul",
+      "pattern": "mul <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vmla_lane",
+      "base": "Vmla",
+      "pattern": "mla <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vmls_lane",
+      "base": "Vmla",
+      "pattern": "mls <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumull_lane",
+      "base": "Vmull",
+      "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumull2_lane",
+      "base": "Vmull",
+      "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmull_lane",
+      "base": "Vmull",
+      "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmull2_lane",
+      "base": "Vmull",
+      "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumlal_lane",
+      "base": "Vmlal",
+      "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumlal2_lane",
+      "base": "Vmlal",
+      "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmlal_lane",
+      "base": "Vmlal",
+      "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmlal2_lane",
+      "base": "Vmlal",
+      "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumlsl_lane",
+      "base": "Vmlal",
+      "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vumlsl2_lane",
+      "base": "Vmlal",
+      "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmlsl_lane",
+      "base": "Vmlal",
+      "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "vsmlsl2_lane",
+      "base": "Vmlal",
+      "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": [
+              "h"
+            ]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    }
+  ]
+}

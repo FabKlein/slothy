@@ -35,11 +35,13 @@ parser exposed by :mod:`aarch64_neon`.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List
 
-from sympy import simplify
+from slothy.targets.aarch64.instruction_loader import (
+    generate_instruction_classes,
+    read_instruction_specs,
+)
 
 from slothy.targets.aarch64.aarch64_neon import (
     AArch64Instruction,
@@ -142,58 +144,8 @@ def _register_instruction(inst_class):
         leaves.append(inst_class)
 
 
-def _resolve_addr(obj, addr_source: Optional[Dict[str, Any]]):
-    if addr_source is None:
-        return
-    kind = addr_source["type"]
-    if kind == "inputs":
-        obj.addr = obj.args_in[addr_source["index"]]
-    elif kind == "in_outs":
-        obj.addr = obj.args_in_out[addr_source["index"]]
-    elif kind == "literal":
-        obj.addr = addr_source["value"]
-    else:
-        raise ValueError(f"Unknown addr_source type: {kind}")
-
-
-def _make_method_factory(spec: Dict[str, Any]):
-    set_inc = spec.get("set_increment_from_immediate", False)
-    set_pre_index = spec.get("pre_index_from_immediate", False)
-    addr_source = spec.get("addr_source")
-
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate if set_inc else None
-        obj.pre_index = obj.immediate if set_pre_index else None
-        _resolve_addr(obj, addr_source)
-        return obj
-
-    return make
-
-
-def _maybe_add_write(cls, restore_pre_index: bool):
-    if not restore_pre_index:
-        return
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super(cls, self).write()
-
-    cls.write = write
-
-
-def _apply_common_attributes(attrs: Dict[str, Any], spec: Dict[str, Any]):
-    for field in ("inputs", "outputs", "in_outs"):
-        if field in spec:
-            attrs[field] = spec[field]
-    for field in ("dependsOnFlags", "modifiesFlags"):
-        if field in spec:
-            attrs[field] = str(spec[field]).lower() == "true"
-
-
 SPEC_PATH = Path(__file__).with_name("aarch64_scalar_instructions.json")
-with SPEC_PATH.open(encoding="utf8") as f:
-    INSTRUCTION_SPECS = json.load(f)["instructions"]
+INSTRUCTION_SPECS = read_instruction_specs(SPEC_PATH)
 
 
 BASE_EXPORTS: List[str] = [
@@ -217,19 +169,9 @@ BASE_EXPORTS: List[str] = [
     "Tst",
 ]
 
-GENERATED_EXPORTS: List[str] = []
-
-for entry in INSTRUCTION_SPECS:
-    name = entry["name"]
-    base_cls = globals()[entry["base"]]
-    attrs: Dict[str, Any] = {"pattern": entry["pattern"]}
-    _apply_common_attributes(attrs, entry)
-    cls = type(name, (base_cls,), attrs)
-    cls.make = classmethod(_make_method_factory(entry))  # type: ignore[attr-defined]
-    _maybe_add_write(cls, entry.get("restore_immediate_from_pre_index", False))
-    globals()[name] = cls
-    _register_instruction(cls)
-    GENERATED_EXPORTS.append(name)
+GENERATED_EXPORTS = generate_instruction_classes(
+    INSTRUCTION_SPECS, globals(), AArch64Instruction, _register_instruction
+)
 
 
 # Preserve the old public names while using upstream's canonical class names.

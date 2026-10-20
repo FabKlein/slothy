@@ -77,3 +77,6 @@ slothy-cli = "slothy.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["slothy*"]
+
+[tool.setuptools.package-data]
+"slothy.targets.aarch64" = ["*.json"]

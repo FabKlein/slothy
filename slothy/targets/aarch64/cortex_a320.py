@@ -28,6 +28,9 @@
 """
 Experimental Cortex-A320 microarchitecture model for SLOTHY
 
+See README.armv9-models.md for source references, operand-specific FMOV timings
+and remaining approximations.
+
 Most data in this model is derived from the Cortex-A320 software optimization guide.
 Some latency exceptions were manually identified through microbenchmarks.
 
@@ -35,6 +38,7 @@ Some latency exceptions were manually identified through microbenchmarks.
 
     The data in this module is approximate and may contain errors.
 """
+
 # ################################ NOTE ############################################ #
 #                                                                                    #
 #  WARNING: The data in this module is approximate and may contain errors.           #
@@ -44,8 +48,50 @@ Some latency exceptions were manually identified through microbenchmarks.
 
 from enum import Enum
 from slothy.helper import lookup_multidict
+from slothy.targets.aarch64.armv9_timing import (
+    FMOV_GPR_TO_VEC,
+    fmov_dependency_latency,
+    forwarding_latency,
+    is_and_eor_16b,
+    is_fp32_vector_arithmetic,
+    is_other_neon_logical,
+)
 from slothy.targets.aarch64.aarch64_neon import (
     find_class,
+    add_w_imm,
+    adds,
+    mul_xform,
+    sfadd_d,
+    Ldp_W,
+    Stp_W,
+    q_ld1_2,
+    q_st1_4_with_postinc,
+    q_ld2_lane_s,
+    csel,
+    csel_xzr_ne,
+    cmp_xzr,
+    asr,
+    asr_imm,
+    lsr,
+    sxtb,
+    uxtb,
+    mov_xform,
+    movk_imm_lsl,
+    fmov_d_form,
+    vdup_w,
+    mov_wtov_s,
+    mov_vtov_d,
+    vushl_reg,
+    vtbl_2,
+    crc32b,
+    crc32h,
+    crc32w,
+    crc32x,
+    crc32cb,
+    crc32ch,
+    crc32cw,
+    crc32cx,
+    Ldp_Q,
     AArch64ConditionalCompare,
     Ldp_X,
     Ldr_X,
@@ -109,7 +155,6 @@ from slothy.targets.aarch64.aarch64_neon import (
     vsub,
     w_stp_with_imm_sp,
     x_str_sp_imm,
-    x_ldr_stack_imm,
     ldr_const,
     ldr_sxtw_wform,
     umull_wform,
@@ -223,9 +268,7 @@ def add_slot_constraints(slothy):
         Instruction.is_q_form_vector_instruction, [0]
     )
     # fcsel and vld2 on slot 0 only
-    slothy.restrict_slots_for_instructions_by_class(
-        [fcsel, Q_Ld2_Lane_Post_Inc], [0]
-    )
+    slothy.restrict_slots_for_instructions_by_class([fcsel, Q_Ld2_Lane_Post_Inc], [0])
 
 
 def add_st_hazard(slothy):
@@ -251,7 +294,43 @@ def get_min_max_objective(slothy):
     return
 
 
+# Coverage added from this CPU's SWOG, not copied from A55 timings.
+# See README.armv9-models.md for sources, resource approximations and caveats.
+_SCALAR_ADDITIONS = (
+    add_w_imm,
+    adds,
+    csel,
+    csel_xzr_ne,
+    cmp_xzr,
+    asr,
+    asr_imm,
+    lsr,
+    sxtb,
+    uxtb,
+    mov_xform,
+    movk_imm_lsl,
+)
+_CRC = (crc32b, crc32h, crc32w, crc32x, crc32cb, crc32ch, crc32cw, crc32cx)
+_TRANSFERS = (fmov_d_form, fmov_s_form, vdup_w, mov_wtov_s) + FMOV_GPR_TO_VEC
+
+
 execution_units = {
+    mul_xform: ExecutionUnit.SCALAR_MUL(),
+    sfadd_d: ExecutionUnit.VEC0,
+    is_fp32_vector_arithmetic: ExecutionUnit.VEC0,
+    _SCALAR_ADDITIONS: ExecutionUnit.SCALAR(),
+    _CRC: ExecutionUnit.SCALAR_MUL(),
+    (_TRANSFERS + (vushl_reg, mov_vtov_d, vtbl_2)): ExecutionUnit.VEC0,
+    # One physical LSU represented conservatively by both scalar resources.
+    (
+        Ldp_W,
+        Stp_W,
+        Ldp_Q,
+        q_ld1_2,
+        q_ld2_lane_s,
+        Q_Ld2_Lane_Post_Inc,
+        q_st1_4_with_postinc,
+    ): [[ExecutionUnit.SCALAR_LOAD, ExecutionUnit.SCALAR_STORE]],
     # q-form vector instructions
     (
         vmla_lane,
@@ -264,7 +343,6 @@ execution_units = {
         vqdmulh_vector,
         Ldr_Q,
         Str_Q,
-        Q_Ld2_Lane_Post_Inc,
         Vmull,
         Vmlal,
         vusra,
@@ -322,8 +400,6 @@ execution_units = {
         d_str_stack_with_inc,
         b_ldr_stack_with_inc,
         d_ldr_stack_with_inc,
-        Q_Ld2_Lane_Post_Inc,
-        fmov_s_form,  # from double/single to gen reg
         Str_S,
     ): [
         ExecutionUnit.VEC0,
@@ -370,7 +446,6 @@ execution_units = {
     is_dform_form_of(AArch64NeonShiftInsert): [ExecutionUnit.VEC0],
     (Stp_X, w_stp_with_imm_sp, x_str_sp_imm, Str_X, Stp_S): ExecutionUnit.SCALAR_STORE,
     (
-        x_ldr_stack_imm,
         ldr_const,
         ldr_sxtw_wform,
         Ldr_X,
@@ -429,6 +504,17 @@ execution_units = {
 }
 
 inverse_throughput = {
+    mul_xform: 2,
+    sfadd_d: 1,
+    is_fp32_vector_arithmetic: 1,
+    (_SCALAR_ADDITIONS + _CRC + _TRANSFERS + (vushl_reg, mov_vtov_d, Ldp_W, Stp_W)): 1,
+    is_qform_form_of(q_st1_4_with_postinc): 4,
+    is_dform_form_of(q_st1_4_with_postinc): 2,
+    is_qform_form_of(q_ld1_2): 2,
+    is_dform_form_of(q_ld1_2): 1,
+    Ldp_Q: 2,
+    # Two cycles per instruction on the single abstract vector resource.
+    vtbl_2: 2,
     (
         vadd,
         vsub,
@@ -474,8 +560,8 @@ inverse_throughput = {
     (VecToGprMov, Mov_xtov_d): 1,
     (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
-    (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
-    (x_ldr_stack_imm, ldr_const): 1,
+    (Stp_X, w_stp_with_imm_sp): 1,
+    (ldr_const): 1,
     (ldr_sxtw_wform): 3,
     (lsr_imm, lsr_wform, ror): 1,
     (umull_wform, mul_wform, umaddl_wform): 1,
@@ -501,7 +587,7 @@ inverse_throughput = {
     AArch64NeonLogical: 1,
     vext: 1,
     (vuzp1, vuzp2): 1,
-    (Q_Ld2_Lane_Post_Inc,): 1,
+    (Q_Ld2_Lane_Post_Inc, q_ld2_lane_s): 6,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 1,
     (mov_d01, mov_b00): 1,
     (vzip1, vzip2): 1,
@@ -509,10 +595,24 @@ inverse_throughput = {
     (eon, eor, bic, bic_reg, eor_shifted, bic_shifted): 1,
     AArch64ConditionalCompare: 1,
     AESInstruction: 1,
-    fmov_s_form: 1,  # from double/single to gen reg
 }
 
 default_latencies = {
+    (mul_xform, sfadd_d): 4,
+    is_fp32_vector_arithmetic: 4,
+    _SCALAR_ADDITIONS: 1,
+    _CRC: 2,
+    # Checked arithmetic consumers use 3; vector-return paths override below.
+    _TRANSFERS: 3,
+    vushl_reg: 3,
+    vtbl_2: 5,
+    # No data result for stores; use one cycle for the base-update dependency.
+    (Stp_W, q_st1_4_with_postinc): 1,
+    mov_vtov_d: 3,
+    Ldp_W: 4,
+    Ldp_Q: 3,
+    is_qform_form_of(q_ld1_2): 4,
+    is_dform_form_of(q_ld1_2): 3,
     vmov: 2,
     is_qform_form_of([vadd, vsub]): 3,
     is_dform_form_of([vadd, vsub]): 2,
@@ -548,7 +648,6 @@ default_latencies = {
     vxtn: 2,
     vshrn: 2,
     vtbl: 2,  # 2+N-1 cycles (N = number of registers in the table)
-    (vuxtl): 2,
     (Str_X, Ldr_X): 4,
     Ldp_X: 4,
     (Ldp_S, Stp_S): 3,
@@ -558,8 +657,8 @@ default_latencies = {
     (VecToGprMov, Mov_xtov_d): 2,
     (movk_imm, movz_imm, movz_imm_lsl, mov, mov_imm, movw_imm): 1,
     (d_stp_stack_with_inc, d_str_stack_with_inc): 1,
-    (Stp_X, w_stp_with_imm_sp, x_str_sp_imm): 1,
-    (x_ldr_stack_imm, ldr_const): 3,
+    (Stp_X, w_stp_with_imm_sp): 1,
+    (ldr_const): 3,
     (ldr_sxtw_wform): 5,
     (lsr_imm, lsr_wform): 1,
     (umull_wform, mul_wform, umaddl_wform): 3,
@@ -586,10 +685,11 @@ default_latencies = {
     VShiftImmediateBasic: 2,
     AArch64NeonShiftInsert: 2,
     (vusra): 3,
-    AArch64NeonLogical: 1,
+    is_and_eor_16b: 3,
+    is_other_neon_logical: 1,
     vext: 2,
     (vuzp1, vuzp2): 2,
-    (Q_Ld2_Lane_Post_Inc,): 3,
+    (Q_Ld2_Lane_Post_Inc, q_ld2_lane_s): 4,
     (b_ldr_stack_with_inc, d_ldr_stack_with_inc): 3,
     (mov_d01, mov_b00): 2,
     (vzip1, vzip2): 2,
@@ -603,22 +703,24 @@ default_latencies = {
     # NOTE: AESE/AESMC and AESD/AESIMC pairs can be dual-issued on A320 but this
     # is not modeled
     AESInstruction: 2,
-    fmov_s_form: 1,  # from double/single to gen reg
 }
 
 
 def get_latency(src, out_idx, dst):
-    _ = out_idx  # out_idx unused
-
     instclass_src = find_class(src)
     instclass_dst = find_class(dst)
 
     latency = lookup_multidict(default_latencies, src, instclass_src)
 
-    if (
-        instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel]
-        and latency < 3
-    ):
+    transfer_latency = fmov_dependency_latency(src, out_idx, dst, add_to_fmov=3)
+    if transfer_latency is not None:
+        return transfer_latency
+
+    bypass = forwarding_latency(src, dst)
+    if bypass is not None:
+        return bypass
+
+    if instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel] and latency < 3:
         latency += 1
 
     if [instclass_src, instclass_dst] in [
