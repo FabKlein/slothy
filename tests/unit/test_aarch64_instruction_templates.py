@@ -45,6 +45,47 @@ class InstructionTemplateTests(unittest.TestCase):
                     self.read({"instructions": [entry], **options}), [entry]
                 )
 
+    def test_documentation_comments_do_not_change_expanded_definitions(self):
+        doc = self.document()
+        doc["instructions"].append({"name": "nop", "base": "Base", "pattern": "nop"})
+        expected = self.read(doc)
+        doc["_comment"] = ["File rationale.", "No runtime effect."]
+        doc["templates"]["binary"]["_comment"] = "Shared declaration, not semantics."
+        doc["instructions"][0]["_comment"] = ["An instruction-specific exception."]
+        doc["instructions"][2]["_comment"] = "Explicit entries accept notes too."
+        before = deepcopy(doc)
+        self.assertEqual(self.read(doc), expected)
+        self.assertEqual(expand_instruction_templates(doc), expected)
+        self.assertEqual(doc, before)
+
+    def test_malformed_documentation_comments_are_rejected(self):
+        for comment in (None, 1, True, "", "  ", [], ["ok", ""], ["ok", 1], {}):
+            for location in ("root", "template", "instruction", "unused_template"):
+                doc = self.document()
+                records = {
+                    "root": doc,
+                    "template": doc["templates"]["binary"],
+                    "instruction": doc["instructions"][0],
+                    "unused_template": doc["templates"].setdefault("unused", {}),
+                }
+                records[location]["_comment"] = comment
+                with self.subTest(location=location, comment=comment):
+                    with self.assertRaisesRegex(ValueError, "_comment"):
+                        self.read(doc)
+
+    def test_legacy_specs_still_reject_documentation_comments(self):
+        for location in ("root", "instruction"):
+            for version in ({}, {"schema_version": 1}):
+                doc = {
+                    **version,
+                    "instructions": [{"name": "nop", "base": "Base", "pattern": "nop"}],
+                }
+                record = doc if location == "root" else doc["instructions"][0]
+                record["_comment"] = "Requires version 2."
+                with self.subTest(location=location, version=version):
+                    with self.assertRaises(ValueError):
+                        self.read(doc)
+
     def test_expansion_keeps_order_names_and_bases(self):
         specs = self.read(self.document())
         self.assertEqual([s["name"] for s in specs], ["vadd", "vsub"])
@@ -201,9 +242,39 @@ class InstructionTemplateTests(unittest.TestCase):
         actual = [e for e in arch._NEON_SPECS if e["name"] in names]
         self.assertEqual(actual, expected)
         for entry in expected:
-            cls = getattr(arch, entry["name"])
-            self.assertEqual(cls.__bases__[0].__name__, entry["base"])
-            self.assertEqual(cls.pattern, entry["pattern"])
+            with self.subTest(instruction=entry["name"]):
+                cls = getattr(arch, entry["name"])
+                self.assertEqual(cls.__bases__[0].__name__, entry["base"])
+                self.assertEqual(cls.pattern, entry["pattern"])
+                for field in ("inputs", "outputs", "in_outs", "required_features"):
+                    if field in entry:
+                        self.assertEqual(cls.__dict__[field], entry[field])
+                self.assertEqual(
+                    cls.register_restrictions, entry.get("register_restrictions", [])
+                )
+
+    def test_shared_templates_keep_instruction_metadata_independent(self):
+        root = Path(arch.__file__).parent
+        document = json.loads((root / "aarch64_neon_instructions.json").read_text())
+        specs = {entry["name"]: entry for entry in arch._NEON_SPECS}
+        for template in document["templates"]:
+            members = [
+                specs[entry["name"]]
+                for entry in document["instructions"]
+                if entry.get("template") == template
+            ]
+            self.assertGreaterEqual(len(members), 2)
+            first = members[0]
+            for other in members[1:]:
+                with self.subTest(template=template, instruction=other["name"]):
+                    for key, value in first.items():
+                        if isinstance(value, (list, dict)) and key in other:
+                            self.assertIsNot(value, other[key])
+                    if "register_restrictions" in first:
+                        self.assertIsNot(
+                            first["register_restrictions"][0]["registers"],
+                            other["register_restrictions"][0]["registers"],
+                        )
 
 
 if __name__ == "__main__":

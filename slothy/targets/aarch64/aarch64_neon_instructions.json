@@ -1,5 +1,11 @@
 {
   "schema_version": 2,
+  "_comment": [
+    "Templates reuse declaration fields, not instruction semantics or CPU timings. Preserve each instruction's Python base: scheduling models depend on those families.",
+    "Instructions override whole template fields; lists and dictionaries are replaced, not merged. Keep existing operand placeholder names and definition order.",
+    "required_features describes ISA availability, not scheduling support. Execution units, throughput and latency remain in the CPU-specific models.",
+    "These notes are stripped before class and table generation. See README.instructions.md for schema rules and why some forms remain explicit or in Python."
+  ],
   "templates": {
     "neon_arithmetic_binary": {
       "required_features": ["FEAT_AdvSIMD"],
@@ -23,16 +29,227 @@
       "outputs": ["Vd"]
     },
     "neon_accumulate": {
+      "_comment": "The destination is read as well as written. Using outputs instead of in_outs would lose the accumulator dependency; widening and lane accumulates follow the same rule.",
       "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmla",
       "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": ["Va", "Vb"],
       "in_outs": ["Vd"]
+    },
+    "neon_unary_mixed_arrangement": {
+      "_comment": "MOV, XTN and UADDLP share this declaration layout, not arithmetic semantics. Separate dt0/dt1 placeholders preserve their existing parser behavior; this template does not add arrangement validation.",
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "AArch64Instruction",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_reverse": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vrev",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_zip_unzip": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vzip",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"]
+    },
+    "neon_saturating_multiply_high_lane": {
+      "_comment": "The halfword lane-source encoding restricts Vb to v0-v15; the word form does not. Test the lane datatype dt1, not the destination arrangement. Lane MLA/MLS use the same condition.",
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vqdmulh",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": ["h"]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    "neon_saturating_multiply_high": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vqdmulh",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"]
+    },
+    "neon_count": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "AArch64NeonCount",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_sha3_ternary": {
+      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
+      "base": "SHA3Instruction",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": ["Va", "Vb", "Vc"],
+      "outputs": ["Vd"]
+    },
+    "neon_widening_multiply": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmull",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"]
+    },
+    "neon_widening_accumulate": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmlal",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
+      "inputs": ["Va", "Vb"],
+      "in_outs": ["Vd"]
+    },
+    "neon_shift_immediate": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "VShiftImmediateBasic",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_rounding_shift_immediate": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "VShiftImmediateRounding",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_shift_insert": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "AArch64NeonShiftInsert",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": ["Va"],
+      "in_outs": ["Vd"]
+    },
+    "neon_accumulate_lane": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmla",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
+      "inputs": ["Va", "Vb"],
+      "in_outs": ["Vd"],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt1": ["h"]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    "neon_widening_multiply_lane": {
+      "_comment": "Widening forms have distinct destination, vector-source and lane-source datatypes. The halfword register restriction therefore tests dt2, not dt0/dt1; widening accumulates use the same rule.",
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmull",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": ["h"]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    "neon_widening_accumulate_lane": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmlal",
+      "pattern": "{mnemonic} <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
+      "inputs": ["Va", "Vb"],
+      "in_outs": ["Vd"],
+      "register_restrictions": [
+        {
+          "operand": "Vb",
+          "when": {
+            "dt2": ["h"]
+          },
+          "registers": {
+            "prefix": "v",
+            "first": 0,
+            "last": 15
+          }
+        }
+      ]
+    },
+    "neon_vector_to_gpr_lane": {
+      "base": "VecToGprMov",
+      "pattern": "{mnemonic} <Xd>, <Va>.d[<index>]",
+      "inputs": ["Va"],
+      "outputs": ["Xd"],
+      "required_features": ["FEAT_AdvSIMD"]
+    },
+    "neon_transpose": {
+      "base": "Transpose",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"],
+      "required_features": ["FEAT_AdvSIMD"]
+    },
+    "neon_aes_inplace": {
+      "base": "AESInstruction",
+      "required_features": ["FEAT_AES"],
+      "pattern": "{mnemonic} <Vd>.16b, <Va>.16b",
+      "inputs": ["Va"],
+      "in_outs": ["Vd"]
+    },
+    "neon_aes_inplace_x4": {
+      "base": "AArch64Instruction",
+      "required_features": ["FEAT_AES"],
+      "pattern": "{mnemonic} <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b",
+      "inputs": ["Va"],
+      "in_outs": ["Vd0", "Vd1", "Vd2", "Vd3"]
+    },
+    "neon_aes_transform": {
+      "base": "AESInstruction",
+      "required_features": ["FEAT_AES"],
+      "pattern": "{mnemonic} <Vd>.16b, <Va>.16b",
+      "inputs": ["Va"],
+      "outputs": ["Vd"]
+    },
+    "neon_compare_register": {
+      "base": "ASimdCompare",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"],
+      "required_features": ["FEAT_AdvSIMD"]
+    },
+    "neon_compare_immediate": {
+      "base": "ASimdCompare",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": ["Va"],
+      "outputs": ["Vd"],
+      "required_features": ["FEAT_AdvSIMD"]
     }
   },
   "instructions": [
     {
       "name": "vfcmla",
+      "_comment": "Keep this form explicit: its matching arrangements, finite rotations and conditional FP16 requirement differ from the ordinary multiply-accumulate templates. Vd is an accumulator.",
       "base": "AArch64Instruction",
       "pattern": "fcmla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
       "inputs": ["Va", "Vb"],
@@ -69,6 +286,7 @@
     },
     {
       "name": "vaddf",
+      "_comment": "Only the floating-point half-precision forms require FEAT_FP16. Keep this condition on FADD (and FMUL), not on a template also used for integer halfword arithmetic.",
       "template": "neon_arithmetic_binary",
       "mnemonic": "fadd",
       "conditional_features": [
@@ -82,15 +300,8 @@
     },
     {
       "name": "vmov",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64Instruction",
-      "pattern": "mov <Vd>.<dt0>, <Va>.<dt1>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_unary_mixed_arrangement",
+      "mnemonic": "mov"
     },
     {
       "name": "vmovi",
@@ -103,185 +314,63 @@
     },
     {
       "name": "vxtn",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64Instruction",
-      "pattern": "xtn <Vd>.<dt0>, <Va>.<dt1>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_unary_mixed_arrangement",
+      "mnemonic": "xtn"
     },
     {
       "name": "rev64",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vrev",
-      "pattern": "rev64 <Vd>.<dt0>, <Va>.<dt1>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_reverse",
+      "mnemonic": "rev64"
     },
     {
       "name": "rev32",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vrev",
-      "pattern": "rev32 <Vd>.<dt0>, <Va>.<dt1>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_reverse",
+      "mnemonic": "rev32"
     },
     {
       "name": "uaddlp",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64Instruction",
-      "pattern": "uaddlp <Vd>.<dt0>, <Va>.<dt1>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_unary_mixed_arrangement",
+      "mnemonic": "uaddlp"
     },
     {
       "name": "vzip1",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vzip",
-      "pattern": "zip1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_zip_unzip",
+      "mnemonic": "zip1"
     },
     {
       "name": "vzip2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vzip",
-      "pattern": "zip2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_zip_unzip",
+      "mnemonic": "zip2"
     },
     {
       "name": "vuzp1",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vzip",
-      "pattern": "uzp1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_zip_unzip",
+      "mnemonic": "uzp1"
     },
     {
       "name": "vuzp2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vzip",
-      "pattern": "uzp2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_zip_unzip",
+      "mnemonic": "uzp2"
     },
     {
       "name": "vqrdmulh_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vqdmulh",
-      "pattern": "sqrdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt1": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_saturating_multiply_high_lane",
+      "mnemonic": "sqrdmulh"
     },
     {
       "name": "vqdmulh_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vqdmulh",
-      "pattern": "sqdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt1": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_saturating_multiply_high_lane",
+      "mnemonic": "sqdmulh"
     },
     {
       "name": "vqrdmulh",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vqdmulh",
-      "pattern": "sqrdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_saturating_multiply_high",
+      "mnemonic": "sqrdmulh"
     },
     {
       "name": "vqdmulh_vector",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vqdmulh",
-      "pattern": "sqdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_saturating_multiply_high",
+      "mnemonic": "sqdmulh"
     },
     {
       "name": "vins_d",
@@ -297,27 +386,13 @@
     },
     {
       "name": "vcnt",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonCount",
-      "pattern": "cnt <Vd>.<dt>, <Va>.<dt>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_count",
+      "mnemonic": "cnt"
     },
     {
       "name": "vclz",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonCount",
-      "pattern": "clz <Vd>.<dt>, <Va>.<dt>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_count",
+      "mnemonic": "clz"
     },
     {
       "name": "mov_wtov_s",
@@ -403,31 +478,13 @@
     },
     {
       "name": "veor3",
-      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
-      "base": "SHA3Instruction",
-      "pattern": "eor3 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb",
-        "Vc"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_sha3_ternary",
+      "mnemonic": "eor3"
     },
     {
       "name": "vbcax",
-      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
-      "base": "SHA3Instruction",
-      "pattern": "bcax <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb",
-        "Vc"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_sha3_ternary",
+      "mnemonic": "bcax"
     },
     {
       "name": "vxar",
@@ -611,171 +668,68 @@
     },
     {
       "name": "vumull",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_widening_multiply",
+      "mnemonic": "umull"
     },
     {
       "name": "vumull2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_widening_multiply",
+      "mnemonic": "umull2"
     },
     {
       "name": "vsmull",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_widening_multiply",
+      "mnemonic": "smull"
     },
     {
       "name": "vsmull2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_widening_multiply",
+      "mnemonic": "smull2"
     },
     {
       "name": "vumlal",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "umlal"
     },
     {
       "name": "vumlal2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "umlal2"
     },
     {
       "name": "vsmlal",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "smlal"
     },
     {
       "name": "vsmlal2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "smlal2"
     },
     {
       "name": "vumlsl",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "umlsl"
     },
     {
       "name": "vumlsl2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "umlsl2"
     },
     {
       "name": "vsmlsl",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "smlsl"
     },
     {
       "name": "vsmlsl2",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_widening_accumulate",
+      "mnemonic": "smlsl2"
     },
     {
       "name": "vshl",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "VShiftImmediateBasic",
-      "pattern": "shl <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_shift_immediate",
+      "mnemonic": "shl"
     },
     {
       "name": "vshl_d",
@@ -803,27 +757,13 @@
     },
     {
       "name": "vsshr",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "VShiftImmediateBasic",
-      "pattern": "sshr <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_shift_immediate",
+      "mnemonic": "sshr"
     },
     {
       "name": "vushr",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "VShiftImmediateBasic",
-      "pattern": "ushr <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_shift_immediate",
+      "mnemonic": "ushr"
     },
     {
       "name": "vuxtl",
@@ -839,27 +779,13 @@
     },
     {
       "name": "vsrshr",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "VShiftImmediateRounding",
-      "pattern": "srshr <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_rounding_shift_immediate",
+      "mnemonic": "srshr"
     },
     {
       "name": "vurshr",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "VShiftImmediateRounding",
-      "pattern": "urshr <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_rounding_shift_immediate",
+      "mnemonic": "urshr"
     },
     {
       "name": "vushl_reg",
@@ -876,27 +802,13 @@
     },
     {
       "name": "vsli",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonShiftInsert",
-      "pattern": "sli <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_shift_insert",
+      "mnemonic": "sli"
     },
     {
       "name": "vsri",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonShiftInsert",
-      "pattern": "sri <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_shift_insert",
+      "mnemonic": "sri"
     },
     {
       "name": "vusra",
@@ -912,6 +824,7 @@
     },
     {
       "name": "vmul_lane",
+      "_comment": "Left explicit to preserve the Vmul base. Similar lane multiply-high and accumulate forms use different Python families; do not change inheritance just to reuse a template.",
       "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmul",
       "pattern": "mul <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
@@ -940,395 +853,73 @@
     },
     {
       "name": "vmla_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmla",
-      "pattern": "mla <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt1": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_accumulate_lane",
+      "mnemonic": "mla"
     },
     {
       "name": "vmls_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmla",
-      "pattern": "mls <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt1": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_accumulate_lane",
+      "mnemonic": "mls"
     },
     {
       "name": "vumull_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_multiply_lane",
+      "mnemonic": "umull"
     },
     {
       "name": "vumull2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_multiply_lane",
+      "mnemonic": "umull2"
     },
     {
       "name": "vsmull_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_multiply_lane",
+      "mnemonic": "smull"
     },
     {
       "name": "vsmull2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmull",
-      "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_multiply_lane",
+      "mnemonic": "smull2"
     },
     {
       "name": "vumlal_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "umlal"
     },
     {
       "name": "vumlal2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "umlal2"
     },
     {
       "name": "vsmlal_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "smlal"
     },
     {
       "name": "vsmlal2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "smlal2"
     },
     {
       "name": "vumlsl_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "umlsl"
     },
     {
       "name": "vumlsl2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "umlsl2"
     },
     {
       "name": "vsmlsl_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "smlsl"
     },
     {
       "name": "vsmlsl2_lane",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmlal",
-      "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ],
-      "register_restrictions": [
-        {
-          "operand": "Vb",
-          "when": {
-            "dt2": [
-              "h"
-            ]
-          },
-          "registers": {
-            "prefix": "v",
-            "first": 0,
-            "last": 15
-          }
-        }
-      ]
+      "template": "neon_widening_accumulate_lane",
+      "mnemonic": "smlsl2"
     },
     {
       "name": "nop",
@@ -1338,31 +929,13 @@
     },
     {
       "name": "umov_d",
-      "base": "VecToGprMov",
-      "pattern": "umov <Xd>, <Va>.d[<index>]",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Xd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_vector_to_gpr_lane",
+      "mnemonic": "umov"
     },
     {
       "name": "mov_d",
-      "base": "VecToGprMov",
-      "pattern": "mov <Xd>, <Va>.d[<index>]",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Xd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_vector_to_gpr_lane",
+      "mnemonic": "mov"
     },
     {
       "name": "fmov_s_form",
@@ -1422,47 +995,18 @@
     },
     {
       "name": "trn1",
-      "base": "Transpose",
-      "pattern": "trn1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_transpose",
+      "mnemonic": "trn1"
     },
     {
       "name": "trn2",
-      "base": "Transpose",
-      "pattern": "trn2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_transpose",
+      "mnemonic": "trn2"
     },
     {
       "name": "aesr",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesr <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_aes_inplace",
+      "mnemonic": "aesr"
     },
     {
       "name": "aesr_x2",
@@ -1481,107 +1025,38 @@
     },
     {
       "name": "aesr_x4",
-      "base": "AArch64Instruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesr_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd0",
-        "Vd1",
-        "Vd2",
-        "Vd3"
-      ]
+      "template": "neon_aes_inplace_x4",
+      "mnemonic": "aesr_x4"
     },
     {
       "name": "aese_x4",
-      "base": "AArch64Instruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aese_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd0",
-        "Vd1",
-        "Vd2",
-        "Vd3"
-      ]
+      "template": "neon_aes_inplace_x4",
+      "mnemonic": "aese_x4"
     },
     {
       "name": "aesdr",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesdr <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_aes_inplace",
+      "mnemonic": "aesdr"
     },
     {
       "name": "aese",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aese <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_aes_inplace",
+      "mnemonic": "aese"
     },
     {
       "name": "aesmc",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesmc <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_aes_transform",
+      "mnemonic": "aesmc"
     },
     {
       "name": "aesd",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesd <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_aes_inplace",
+      "mnemonic": "aesd"
     },
     {
       "name": "aesimc",
-      "base": "AESInstruction",
-      "required_features": [
-        "FEAT_AES"
-      ],
-      "pattern": "aesimc <Vd>.16b, <Va>.16b",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_aes_transform",
+      "mnemonic": "aesimc"
     },
     {
       "name": "pmull1_q",
@@ -1615,106 +1090,38 @@
     },
     {
       "name": "cmge",
-      "base": "ASimdCompare",
-      "pattern": "cmge <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_register",
+      "mnemonic": "cmge"
     },
     {
       "name": "cmhi",
-      "base": "ASimdCompare",
-      "pattern": "cmhi <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_register",
+      "mnemonic": "cmhi"
     },
     {
       "name": "cmeq",
-      "base": "ASimdCompare",
-      "pattern": "cmeq <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_register",
+      "mnemonic": "cmeq"
     },
     {
       "name": "cmgt",
-      "base": "ASimdCompare",
-      "pattern": "cmgt <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_register",
+      "mnemonic": "cmgt"
     },
     {
       "name": "cmhs",
-      "base": "ASimdCompare",
-      "pattern": "cmhs <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_register",
+      "mnemonic": "cmhs"
     },
     {
       "name": "cmle",
-      "base": "ASimdCompare",
-      "pattern": "cmle <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_immediate",
+      "mnemonic": "cmle"
     },
     {
       "name": "cmlt",
-      "base": "ASimdCompare",
-      "pattern": "cmlt <Vd>.<dt>, <Va>.<dt>, <imm>",
-      "inputs": [
-        "Va"
-      ],
-      "outputs": [
-        "Vd"
-      ],
-      "required_features": [
-        "FEAT_AdvSIMD"
-      ]
+      "template": "neon_compare_immediate",
+      "mnemonic": "cmlt"
     },
     {
       "name": "vuaddlv_sform",
@@ -1732,6 +1139,7 @@
     },
     {
       "name": "q_ldr",
+      "_comment": "Memory forms below stay explicit: loads/stores, single/pair forms and offset/pre-/post-index modes differ in operand roles, address-source indices and writeback metadata. Similar spelling is not enough to merge them.",
       "base": "Ldr_Q",
       "pattern": "ldr <Qa>, [<Xc>]",
       "inputs": [

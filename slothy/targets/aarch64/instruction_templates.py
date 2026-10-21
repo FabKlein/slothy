@@ -29,6 +29,21 @@ INSTRUCTION_FIELDS = {
 }
 
 
+def _validate_comment(record):
+    if "_comment" not in record:
+        return
+    comment = record["_comment"]
+    lines = [comment] if isinstance(comment, str) else comment
+    if (
+        not isinstance(lines, list)
+        or not lines
+        or not all(isinstance(line, str) and line.strip() for line in lines)
+    ):
+        raise ValueError(
+            "_comment must be a nonempty string or list of nonempty strings"
+        )
+
+
 def _expand_pattern(entry, mnemonic):
     pattern = entry.get("pattern")
     if not isinstance(pattern, str) or not pattern:
@@ -61,9 +76,10 @@ def expand_instruction_templates(data):
         raise ValueError("Unsupported schema_version")
     allowed = {"schema_version", "instructions"}
     if version == 2:
-        allowed.add("templates")
+        allowed.update({"templates", "_comment"})
     if set(data) - allowed:
         raise ValueError("Unsupported instruction specification fields")
+    _validate_comment(data)
     entries = data.get("instructions")
     if not isinstance(entries, list):
         raise ValueError("instructions must be a list")
@@ -74,17 +90,19 @@ def expand_instruction_templates(data):
         if not isinstance(name, str) or not name.isidentifier():
             raise ValueError(f"Invalid template name {name!r}")
         if not isinstance(template, dict) or set(template) - (
-            INSTRUCTION_FIELDS - {"name"}
+            (INSTRUCTION_FIELDS - {"name"}) | {"_comment"}
         ):
             raise ValueError(f"Invalid fields in template {name!r}")
+        _validate_comment(template)
 
     expanded = []
     for entry in entries:
         fields = INSTRUCTION_FIELDS | (
-            {"template", "mnemonic"} if version == 2 else set()
+            {"template", "mnemonic", "_comment"} if version == 2 else set()
         )
         if not isinstance(entry, dict) or set(entry) - fields:
             raise ValueError(f"Unknown instruction fields: {entry!r}")
+        _validate_comment(entry)
         if "template" not in entry:
             if "mnemonic" in entry:
                 raise ValueError("mnemonic requires an instruction template")
@@ -100,5 +118,7 @@ def expand_instruction_templates(data):
                 raise ValueError("mnemonic must be a string")
             mnemonic = concrete.pop("mnemonic", None)
             _expand_pattern(concrete, mnemonic)
+        # Documentation only: never generate class attributes or table columns.
+        concrete.pop("_comment", None)
         expanded.append(concrete)
     return expanded

@@ -122,6 +122,11 @@ not template references. The standalone generator remains standard-library-only.
 - `templates` is an optional object mapping identifier names to field defaults.
   Templates may contain instruction fields other than `name`; they cannot
   contain `template` or `mnemonic`. There is no nested template inheritance.
+- Version 2 accepts `_comment` at the file root, inside a template, or inside an
+  instruction entry. Use a nonempty string or a nonempty list of nonempty strings
+  for rationale while keeping valid standard JSON. Comments are validated and
+  discarded before class/table generation; they are not instruction metadata.
+  Other nested objects do not accept this field. Version 1 remains unchanged.
 - Each instruction supplies its own `name` and may select exactly one template.
   Its explicit fields override the template's fields. Lists and dictionaries
   replace whole fields; they are not concatenated or recursively merged.
@@ -145,9 +150,25 @@ not template references. The standalone generator remains standard-library-only.
 The initial migration covers 12 definitions in four templates: ADD/FADD/SUB,
 AND/BIC/ORR/ORN/EOR, MUL/FMUL, and MLA/MLS. FP16 conditions remain explicit
 overrides on FADD/FMUL. FP accumulator subclasses retain their existing Python
-inheritance. Lane, memory, and exceptional forms remain explicit for now.
-This is a representation-only change: it adds no accepted operand forms, ISA
-features, timing entries, or new inheritance relationships.
+inheritance.
+
+A follow-up migrates 69 more definitions into 22 additional exact-match
+templates, bringing the total to 81 definitions using 26 templates. These cover
+widening multiply/accumulate/subtract and their lane forms, saturating
+multiply-high, lane MLA/MLS, ZIP/UZP and TRN permutations, reverse/count,
+immediate shifts, comparisons, SHA3 ternary forms, AES groups, vector-to-GPR
+lane moves, and matching unary mixed-arrangement forms. Within each new group,
+every field except the name and mnemonic is identical before expansion.
+
+Sixteen of the 17 integer lane forms now share templates, including the
+halfword source-register restrictions. Non-widening templates retain their
+`dt1` condition; widening templates retain `dt2`. `vmul_lane` stays explicit
+because its otherwise similar forms have different Python bases. Loads/stores
+and other unmatched definitions also stay explicit. Sharing a syntax template
+does not imply identical instruction semantics or CPU timings.
+
+Both migrations are representation-only changes: they add no accepted operand
+forms, ISA features, timing entries, or new inheritance relationships.
 
 ## Finite operand values and FCMLA
 
@@ -462,7 +483,7 @@ at the halfword/word register boundaries.
 `test_aarch64_instruction_templates.py` checks version compatibility, expansion,
 whole-field overrides, independent mutable fields, preserved class bases,
 register-list braces, malformed templates, and validation after expansion.
-The 12 migrated definitions are compared field-for-field against a pre-template
+All 81 templated definitions are compared field-for-field against a pre-template
 fixture, including their order and exact operand placeholders. Existing parser,
 ISA, CPU-model, scheduling, and execution regressions continue to exercise the
 same generated classes.
