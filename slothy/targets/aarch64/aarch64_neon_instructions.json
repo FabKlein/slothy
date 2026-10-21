@@ -3,6 +3,7 @@
   "instructions": [
     {
       "name": "fmov_w_to_s",
+      "required_features": ["FEAT_FP"],
       "base": "Fmov",
       "pattern": "fmov <Sd>, <Wa>",
       "inputs": ["Wa"],
@@ -10,6 +11,7 @@
     },
     {
       "name": "sfadd_d",
+      "required_features": ["FEAT_FP"],
       "base": "AArch64Instruction",
       "pattern": "fadd <Dd>, <Da>, <Db>",
       "inputs": ["Da", "Db"],
@@ -17,6 +19,7 @@
     },
     {
       "name": "vadd",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "add <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
       "inputs": [
@@ -29,6 +32,8 @@
     },
     {
       "name": "vaddf",
+      "required_features": ["FEAT_AdvSIMD"],
+      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
       "base": "AArch64Instruction",
       "pattern": "fadd <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
       "inputs": [
@@ -41,6 +46,7 @@
     },
     {
       "name": "vsub",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "sub <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
       "inputs": [
@@ -53,6 +59,7 @@
     },
     {
       "name": "vmov",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -64,6 +71,7 @@
     },
     {
       "name": "vmovi",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "movi <Vd>.<dt>, <imm>",
       "outputs": [
@@ -72,6 +80,7 @@
     },
     {
       "name": "vxtn",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "xtn <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -83,6 +92,7 @@
     },
     {
       "name": "rev64",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vrev",
       "pattern": "rev64 <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -94,6 +104,7 @@
     },
     {
       "name": "rev32",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vrev",
       "pattern": "rev32 <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -105,6 +116,7 @@
     },
     {
       "name": "uaddlp",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "uaddlp <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -116,6 +128,7 @@
     },
     {
       "name": "vzip1",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vzip",
       "pattern": "zip1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -128,6 +141,7 @@
     },
     {
       "name": "vzip2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vzip",
       "pattern": "zip2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -140,6 +154,7 @@
     },
     {
       "name": "vuzp1",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vzip",
       "pattern": "uzp1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -152,6 +167,7 @@
     },
     {
       "name": "vuzp2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vzip",
       "pattern": "uzp2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -164,6 +180,7 @@
     },
     {
       "name": "vqrdmulh_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vqdmulh",
       "pattern": "sqrdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
       "inputs": [
@@ -191,6 +208,7 @@
     },
     {
       "name": "vqdmulh_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vqdmulh",
       "pattern": "sqdmulh <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
       "inputs": [
@@ -218,6 +236,7 @@
     },
     {
       "name": "vqrdmulh",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vqdmulh",
       "pattern": "sqrdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -230,6 +249,7 @@
     },
     {
       "name": "vqdmulh_vector",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vqdmulh",
       "pattern": "sqdmulh <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -242,6 +262,7 @@
     },
     {
       "name": "vins_d",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vins",
       "pattern": "ins <Vd>.d[<index>], <Xa>",
       "inputs": [
@@ -253,6 +274,7 @@
     },
     {
       "name": "vcnt",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonCount",
       "pattern": "cnt <Vd>.<dt>, <Va>.<dt>",
       "inputs": [
@@ -264,6 +286,7 @@
     },
     {
       "name": "vclz",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonCount",
       "pattern": "clz <Vd>.<dt>, <Va>.<dt>",
       "inputs": [
@@ -275,6 +298,7 @@
     },
     {
       "name": "mov_wtov_s",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Vd>.s[<index>], <Wa>",
       "inputs": [
@@ -286,6 +310,7 @@
     },
     {
       "name": "mov_xtov_d",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Mov_xtov_d",
       "pattern": "mov <Vd>.d[<index>], <Xa>",
       "inputs": [
@@ -297,6 +322,7 @@
     },
     {
       "name": "mov_xtov_d_xzr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Mov_xtov_d",
       "pattern": "mov <Vd>.d[<index>], xzr",
       "in_outs": [
@@ -305,6 +331,7 @@
     },
     {
       "name": "mov_b00",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Vd>.b[0], <Va>.b[0]",
       "inputs": [
@@ -316,6 +343,7 @@
     },
     {
       "name": "mov_d01",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Vd>.d[0], <Va>.d[1]",
       "inputs": [
@@ -327,6 +355,7 @@
     },
     {
       "name": "mov_vtov_d",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Vd>.d[<index0>], <Va>.d[<index1>]",
       "inputs": [
@@ -338,6 +367,7 @@
     },
     {
       "name": "vrax1",
+      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
       "base": "SHA3Instruction",
       "pattern": "rax1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -350,6 +380,7 @@
     },
     {
       "name": "veor3",
+      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
       "base": "SHA3Instruction",
       "pattern": "eor3 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
       "inputs": [
@@ -363,6 +394,7 @@
     },
     {
       "name": "vbcax",
+      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
       "base": "SHA3Instruction",
       "pattern": "bcax <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
       "inputs": [
@@ -376,6 +408,7 @@
     },
     {
       "name": "vxar",
+      "required_features": ["FEAT_AdvSIMD", "FEAT_SHA3"],
       "base": "SHA3Instruction",
       "pattern": "xar <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
       "inputs": [
@@ -388,6 +421,7 @@
     },
     {
       "name": "vtbl",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "tbl <Vd>.<dt>, {<Va>.<dt>}, <Vb>.<dt>",
       "inputs": [
@@ -400,6 +434,7 @@
     },
     {
       "name": "vand",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "and <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -412,6 +447,7 @@
     },
     {
       "name": "vbic",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "bic <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -424,6 +460,7 @@
     },
     {
       "name": "vbic_imm_shifted",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "bic <Vda>.<dt>, <imm0>, <barrel> <imm1>",
       "in_outs": [
@@ -432,6 +469,7 @@
     },
     {
       "name": "vmvn",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "mvn <Vd>.<dt>, <Va>.<dt>",
       "inputs": [
@@ -443,6 +481,7 @@
     },
     {
       "name": "vorr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "orr <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -455,6 +494,7 @@
     },
     {
       "name": "vorr_imm",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "orr <Vda>.<dt>, <imm>",
       "in_outs": [
@@ -463,6 +503,7 @@
     },
     {
       "name": "vorn",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "orn <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -475,6 +516,7 @@
     },
     {
       "name": "veor",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonLogical",
       "pattern": "eor <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -487,6 +529,7 @@
     },
     {
       "name": "vbif",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "bif <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>",
       "inputs": [
@@ -499,6 +542,7 @@
     },
     {
       "name": "vmov_d",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "mov <Dd>, <Va>.d[1]",
       "inputs": [
@@ -510,6 +554,7 @@
     },
     {
       "name": "vext",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "ext <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
       "inputs": [
@@ -522,6 +567,7 @@
     },
     {
       "name": "vmul",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmul",
       "pattern": "mul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -534,6 +580,8 @@
     },
     {
       "name": "vmulf",
+      "required_features": ["FEAT_AdvSIMD"],
+      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
       "base": "Vmul",
       "pattern": "fmul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -546,6 +594,7 @@
     },
     {
       "name": "vmla",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmla",
       "pattern": "mla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -558,11 +607,14 @@
     },
     {
       "name": "vfmla",
+      "required_features": ["FEAT_AdvSIMD"],
+      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
       "base": "vmla",
       "pattern": "fmla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
     },
     {
       "name": "vmls",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmla",
       "pattern": "mls <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -575,11 +627,14 @@
     },
     {
       "name": "vfmls",
+      "required_features": ["FEAT_AdvSIMD"],
+      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
       "base": "vmls",
       "pattern": "fmls <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
     },
     {
       "name": "vdup",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "dup <Vd>.<dt>, <Xa>",
       "inputs": [
@@ -591,6 +646,7 @@
     },
     {
       "name": "vdup_w",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "dup <Vd>.<dt>, <Wa>",
       "inputs": [
@@ -602,6 +658,7 @@
     },
     {
       "name": "vumull",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -614,6 +671,7 @@
     },
     {
       "name": "vumull2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -626,6 +684,7 @@
     },
     {
       "name": "vsmull",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -638,6 +697,7 @@
     },
     {
       "name": "vsmull2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -650,6 +710,7 @@
     },
     {
       "name": "vumlal",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -662,6 +723,7 @@
     },
     {
       "name": "vumlal2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -674,6 +736,7 @@
     },
     {
       "name": "vsmlal",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -686,6 +749,7 @@
     },
     {
       "name": "vsmlal2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -698,6 +762,7 @@
     },
     {
       "name": "vumlsl",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -710,6 +775,7 @@
     },
     {
       "name": "vumlsl2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -722,6 +788,7 @@
     },
     {
       "name": "vsmlsl",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -734,6 +801,7 @@
     },
     {
       "name": "vsmlsl2",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt1>",
       "inputs": [
@@ -746,6 +814,7 @@
     },
     {
       "name": "vshl",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "shl <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -757,6 +826,7 @@
     },
     {
       "name": "vshl_d",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "shl <Dd>, <Da>, <imm>",
       "inputs": [
@@ -768,6 +838,7 @@
     },
     {
       "name": "vshrn",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "shrn <Vd>.<dt0>, <Va>.<dt1>, <imm>",
       "inputs": [
@@ -779,6 +850,7 @@
     },
     {
       "name": "vsshr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "sshr <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -790,6 +862,7 @@
     },
     {
       "name": "vushr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "ushr <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -801,6 +874,7 @@
     },
     {
       "name": "vuxtl",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateBasic",
       "pattern": "uxtl <Vd>.<dt0>, <Va>.<dt1>",
       "inputs": [
@@ -812,6 +886,7 @@
     },
     {
       "name": "vsrshr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateRounding",
       "pattern": "srshr <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -823,6 +898,7 @@
     },
     {
       "name": "vurshr",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftImmediateRounding",
       "pattern": "urshr <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -834,6 +910,7 @@
     },
     {
       "name": "vushl_reg",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "VShiftRegBasic",
       "pattern": "ushl <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
       "inputs": [
@@ -846,6 +923,7 @@
     },
     {
       "name": "vsli",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonShiftInsert",
       "pattern": "sli <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -857,6 +935,7 @@
     },
     {
       "name": "vsri",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64NeonShiftInsert",
       "pattern": "sri <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -868,6 +947,7 @@
     },
     {
       "name": "vusra",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "AArch64Instruction",
       "pattern": "usra <Vd>.<dt>, <Va>.<dt>, <imm>",
       "inputs": [
@@ -879,6 +959,7 @@
     },
     {
       "name": "vmul_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmul",
       "pattern": "mul <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
       "inputs": [
@@ -906,6 +987,7 @@
     },
     {
       "name": "vmla_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmla",
       "pattern": "mla <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
       "inputs": [
@@ -933,6 +1015,7 @@
     },
     {
       "name": "vmls_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmla",
       "pattern": "mls <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]",
       "inputs": [
@@ -960,6 +1043,7 @@
     },
     {
       "name": "vumull_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "umull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -987,6 +1071,7 @@
     },
     {
       "name": "vumull2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "umull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1014,6 +1099,7 @@
     },
     {
       "name": "vsmull_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "smull <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1041,6 +1127,7 @@
     },
     {
       "name": "vsmull2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmull",
       "pattern": "smull2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1068,6 +1155,7 @@
     },
     {
       "name": "vumlal_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1095,6 +1183,7 @@
     },
     {
       "name": "vumlal2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1122,6 +1211,7 @@
     },
     {
       "name": "vsmlal_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlal <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1149,6 +1239,7 @@
     },
     {
       "name": "vsmlal2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlal2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1176,6 +1267,7 @@
     },
     {
       "name": "vumlsl_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1203,6 +1295,7 @@
     },
     {
       "name": "vumlsl2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "umlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1230,6 +1323,7 @@
     },
     {
       "name": "vsmlsl_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlsl <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [
@@ -1257,6 +1351,7 @@
     },
     {
       "name": "vsmlsl2_lane",
+      "required_features": ["FEAT_AdvSIMD"],
       "base": "Vmlal",
       "pattern": "smlsl2 <Vd>.<dt0>, <Va>.<dt1>, <Vb>.<dt2>[<index>]",
       "inputs": [

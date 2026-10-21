@@ -264,6 +264,7 @@
         "Sd"
       ],
       "name": "sfmadd",
+      "required_features": ["FEAT_FP"],
       "outputs": [
         "Sa"
       ],
@@ -315,6 +316,7 @@
         "Sc"
       ],
       "name": "sfmul",
+      "required_features": ["FEAT_FP"],
       "outputs": [
         "Sa"
       ],
@@ -830,6 +832,7 @@
       ],
       "modifiesFlags": "True",
       "name": "subs_wform",
+      "required_features": [],
       "outputs": [
         "Wd"
       ],
@@ -842,6 +845,7 @@
       ],
       "modifiesFlags": "True",
       "name": "subs_imm",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -853,6 +857,7 @@
         "Xa"
       ],
       "name": "sub_imm",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -864,6 +869,7 @@
         "Xa"
       ],
       "name": "add_imm",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -941,6 +947,7 @@
       ],
       "modifiesFlags": "True",
       "name": "adds",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -1196,6 +1203,7 @@
         "Xb"
       ],
       "name": "add",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -1219,6 +1227,7 @@
         "Wa"
       ],
       "name": "add_w_imm",
+      "required_features": [],
       "outputs": [
         "Wd"
       ],
@@ -1231,6 +1240,7 @@
         "Xb"
       ],
       "name": "sub",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -1908,6 +1918,7 @@
         "Xb"
       ],
       "name": "mul_xform",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -2061,6 +2072,7 @@
     },
     {
       "name": "fcsel",
+      "required_features": ["FEAT_FP"],
       "base": "AArch64ConditionalSelect",
       "pattern": "fcsel <Dd>, <Dn>, <Dm>, <flag>",
       "inputs": [
@@ -2083,6 +2095,7 @@
     },
     {
       "name": "crc32b",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32b <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2095,6 +2108,7 @@
     },
     {
       "name": "crc32h",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32h <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2107,6 +2121,7 @@
     },
     {
       "name": "crc32w",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32w <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2119,6 +2134,7 @@
     },
     {
       "name": "crc32x",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32x <Wd>, <Wa>, <Xb>",
       "inputs": [
@@ -2131,6 +2147,7 @@
     },
     {
       "name": "crc32cb",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32cb <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2143,6 +2160,7 @@
     },
     {
       "name": "crc32ch",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32ch <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2155,6 +2173,7 @@
     },
     {
       "name": "crc32cw",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32cw <Wd>, <Wa>, <Wb>",
       "inputs": [
@@ -2167,6 +2186,7 @@
     },
     {
       "name": "crc32cx",
+      "required_features": ["FEAT_CRC32"],
       "base": "AArch64CRC32",
       "pattern": "crc32cx <Wd>, <Wa>, <Xb>",
       "inputs": [

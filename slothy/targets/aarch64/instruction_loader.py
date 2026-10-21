@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 from sympy import simplify
+from slothy.targets.aarch64.isa import validate_requirements
 
 _OPERANDS = ("inputs", "outputs", "in_outs")
 _FLAGS = ("dependsOnFlags", "modifiesFlags")
@@ -23,6 +24,8 @@ _FIELDS = {
     "pattern",
     "addr_source",
     "register_restrictions",
+    "required_features",
+    "conditional_features",
     *_OPERANDS,
     *_FLAGS,
     *_MEMORY,
@@ -176,6 +179,7 @@ def read_instruction_specs(path):
             if field in entry:
                 entry[field] = _boolean(entry[field])
         _validate_restrictions(entry.get("register_restrictions", []), entry["pattern"])
+        validate_requirements(entry)
         addr = entry.get("addr_source")
         if addr is not None:
             if not isinstance(addr, dict):
@@ -241,6 +245,8 @@ def generate_instruction_classes(specs, namespace, builder, register=None):
         if name in namespace:
             raise ValueError(f"{name}: instruction name already defined")
         attrs = {"pattern": entry["pattern"], "__module__": namespace["__name__"]}
+        attrs["required_features"] = entry.get("required_features")
+        attrs["conditional_features"] = entry.get("conditional_features", [])
         attrs.update({key: entry[key] for key in (*_OPERANDS, *_FLAGS) if key in entry})
         rules = entry.get(
             "register_restrictions", getattr(base, "register_restrictions", [])

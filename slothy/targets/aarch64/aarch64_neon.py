@@ -50,6 +50,9 @@ from slothy.targets.aarch64.instruction_loader import (
     generate_instruction_classes as _generate_instruction_classes,
 )
 
+# Public hook called by the architecture-independent dataflow engine.
+from slothy.targets.aarch64.isa import validate_instruction_features  # noqa: F401
+
 from unicorn import (
     UC_ARCH_ARM64,
     UC_MODE_ARM,
@@ -1380,6 +1383,7 @@ class restore(Instruction):
 
 
 class nop(AArch64Instruction):
+    required_features = []
     pattern = "nop"
 
 
@@ -2087,6 +2091,7 @@ class Vins(AArch64Instruction):
 
 
 class vins_d_force_output(Vins):
+    required_features = ["FEAT_AdvSIMD"]
     pattern = "ins <Vd>.d[<index>], <Xa>"
     inputs = ["Xa"]
     outputs = ["Vd"]
@@ -2117,6 +2122,7 @@ class AArch64NeonLogical(AArch64Instruction):
 
 
 class vtbl_2(AArch64Instruction):
+    required_features = ["FEAT_AdvSIMD"]
     # Table registers are always 128-bit, even for an 8-byte result/index.
     pattern = "tbl <Vd>.<dt>, {<Va>.16b, <Vb>.16b}, <Vc>.<dt>"
     inputs = ["Va", "Vb", "Vc"]
@@ -2158,6 +2164,8 @@ def _check_fp_lane_operands(obj):
 
 
 class vmulf_lane(Vmul):
+    required_features = ["FEAT_AdvSIMD"]
+    conditional_features = [{"when": {"dt1": ["h"]}, "requires": ["FEAT_FP16"]}]
     pattern = "fmul <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]"
     inputs = ["Va", "Vb"]
     outputs = ["Vd"]
@@ -2172,6 +2180,8 @@ class Vmla(AArch64Instruction):
 
 
 class vfmla_lane(Vmla):
+    required_features = ["FEAT_AdvSIMD"]
+    conditional_features = [{"when": {"dt1": ["h"]}, "requires": ["FEAT_FP16"]}]
     pattern = "fmla <Vd>.<dt0>, <Va>.<dt0>, <Vb>.<dt1>[<index>]"
     inputs = ["Va", "Vb"]
     in_outs = ["Vd"]
@@ -2296,66 +2306,77 @@ class AESInstruction(AArch64Instruction):
 
 
 class aesr(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesr <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
 
 class aesr_x2(AArch64Instruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesr_x2 <Vd0>.16b, <Vd1>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd0", "Vd1"]
 
 
 class aesr_x4(AArch64Instruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesr_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd0", "Vd1", "Vd2", "Vd3"]
 
 
 class aese_x4(AArch64Instruction):
+    required_features = ["FEAT_AES"]
     pattern = "aese_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd0", "Vd1", "Vd2", "Vd3"]
 
 
 class aesdr(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesdr <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
 
 class aese(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aese <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
 
 class aesmc(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesmc <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     outputs = ["Vd"]
 
 
 class aesd(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesd <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     in_outs = ["Vd"]
 
 
 class aesimc(AESInstruction):
+    required_features = ["FEAT_AES"]
     pattern = "aesimc <Vd>.16b, <Va>.16b"
     inputs = ["Va"]
     outputs = ["Vd"]
 
 
 class pmull1_q(AESInstruction):
+    required_features = ["FEAT_PMULL"]
     pattern = "pmull <Vd>.1q, <Va>.1d, <Vb>.1d"
     inputs = ["Va", "Vb"]
     outputs = ["Vd"]
 
 
 class pmull2_q(AESInstruction):
+    required_features = ["FEAT_PMULL"]
     pattern = "pmull2 <Vd>.1q, <Va>.2d, <Vb>.2d"
     inputs = ["Va", "Vb"]
     outputs = ["Vd"]

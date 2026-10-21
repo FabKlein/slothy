@@ -970,6 +970,13 @@ class DataFlowGraph:
         self.logger.debug("Dumping computational flow graph")
         self.describe()
 
+        # Also runs after parsing/fusion callbacks rebuild the graph. Keep the
+        # generic dataflow engine independent of architecture-specific ISA rules.
+        validator = getattr(self.arch, "validate_instruction_features", None)
+        config = getattr(self.config, "_slothy_config", None)
+        if validator is not None and config is not None:
+            validator((node.inst for node in self.nodes), config, self.logger)
+
     def _add_node_from_candidates(self, candidates, sourceline):
         valid_candidates = list(filter(self._typecheck_node, candidates))
         num_valid_candidates = len(valid_candidates)

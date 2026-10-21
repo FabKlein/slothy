@@ -44,6 +44,7 @@ Some latency exceptions were manually identified through microbenchmarks.
 # ################################################################################## #
 
 from enum import Enum
+from slothy.targets.aarch64.isa import TargetISA
 from slothy.helper import lookup_multidict
 from slothy.targets.aarch64.aarch64_neon import (
     find_class,
@@ -215,6 +216,25 @@ from slothy.targets.aarch64.aarch64 import (
 
 issue_rate = 2
 llvm_mca_target = "cortex-a55"
+
+# ISA profile assumes optional FP/NEON, dot product, and crypto are enabled.
+# Use config.isa_features to describe a reduced implementation (see README.instructions).
+isa = TargetISA(
+    architecture="armv8.2-a",
+    enabled=frozenset(
+        {
+            "FEAT_FP",
+            "FEAT_AdvSIMD",
+            "FEAT_FP16",
+            "FEAT_RDM",
+            "FEAT_CRC32",
+            "FEAT_AES",
+            "FEAT_PMULL",
+            "FEAT_DotProd",
+        }
+    ),
+    unsupported=frozenset({"FEAT_SHA3", "FEAT_I8MM"}),
+)
 
 
 class ExecutionUnit(Enum):

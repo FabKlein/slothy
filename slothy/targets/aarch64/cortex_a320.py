@@ -47,6 +47,7 @@ Some latency exceptions were manually identified through microbenchmarks.
 # ################################################################################## #
 
 from enum import Enum
+from slothy.targets.aarch64.isa import TargetISA
 from slothy.helper import lookup_multidict
 from slothy.targets.aarch64.armv9_timing import (
     FMOV_GPR_TO_VEC,
@@ -228,6 +229,25 @@ from slothy.targets.aarch64.aarch64 import (
 
 issue_rate = 1
 llvm_mca_target = "cortex-A320"
+
+# Optional cryptographic support is assumed enabled; see README.instructions.md.
+isa = TargetISA(
+    architecture="armv9.2-a",
+    enabled=frozenset(
+        {
+            "FEAT_FP",
+            "FEAT_AdvSIMD",
+            "FEAT_FP16",
+            "FEAT_RDM",
+            "FEAT_CRC32",
+            "FEAT_AES",
+            "FEAT_PMULL",
+            "FEAT_SHA3",
+            "FEAT_DotProd",
+            "FEAT_I8MM",
+        }
+    ),
+)
 
 
 class ExecutionUnit(Enum):

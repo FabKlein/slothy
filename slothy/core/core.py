@@ -39,6 +39,7 @@ import ortools
 from ortools.sat.python import cp_model
 
 from slothy.core.config import Config
+from slothy.targets.exceptions import UnknownInstruction
 from slothy.helper import (
     LockAttributes,
     Permutation,
@@ -2644,8 +2645,15 @@ class SlothyBase(LockAttributes):
             return
 
         for t in self._get_nodes():
-            cycles_unit_occupied = self.target.get_inverse_throughput(t.inst)
-            units = self.target.get_units(t.inst)
+            try:
+                cycles_unit_occupied = self.target.get_inverse_throughput(t.inst)
+                units = self.target.get_units(t.inst)
+            except UnknownInstruction as error:
+                raise UnknownInstruction(
+                    f"Missing throughput/execution-unit model for {t.inst} on "
+                    f"{self.target.__name__}; this is a scheduling-model gap, "
+                    "not an ISA-support check"
+                ) from error
             if len(units) == 1:
                 if isinstance(units[0], list):
                     # multiple execution units in use
@@ -3590,7 +3598,14 @@ class SlothyBase(LockAttributes):
         if not self.config.constraints.model_latencies:
             return
         for t, i, _, _ in self._iter_dependencies(with_virt=False):
-            latency = self.target.get_latency(i.src.inst, i.idx, t.inst)
+            try:
+                latency = self.target.get_latency(i.src.inst, i.idx, t.inst)
+            except UnknownInstruction as error:
+                raise UnknownInstruction(
+                    f"Missing latency model for {i.src.inst} -> {t.inst} on "
+                    f"{self.target.__name__}; this is a scheduling-model gap, "
+                    "not an ISA-support check"
+                ) from error
             if isinstance(latency, int):
                 self.logger.debug(
                     "General latency constraint: [%s] >= [%s] + %d", t, i.src, latency

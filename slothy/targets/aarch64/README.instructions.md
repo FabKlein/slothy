@@ -68,6 +68,8 @@ booleans are rejected. Class names must not overwrite existing Python names.
 | `inputs` / `outputs` / `in_outs` | Read-only, write-only, and read/write register placeholders |
 | `dependsOnFlags` / `modifiesFlags` | Read/write dependencies on architectural flags |
 | `register_restrictions` | Conditional or unconditional allocation rules for named operands; see below |
+| `required_features` | Explicit ISA requirements for this concrete instruction; omitted means unclassified, `[]` means baseline A64 |
+| `conditional_features` | Additional ISA requirements selected by datatype placeholders; see below |
 | `addr_source` | Address operand: `{"type": "inputs", "index": 0}`, `in_outs`, or `{"type": "literal", "value": "sp"}` |
 | `set_increment_from_immediate` | Model an immediate post-increment |
 | `pre_index_from_immediate` | Model the immediate address offset |
@@ -159,6 +161,126 @@ constraints remain in CPU-specific models (`cortex_a520.py`, `cortex_a55.py`,
 etc.). Adding JSON syntax alone does **not** add timing support to every CPU.
 This migration does not change CPU timing tables or fill their coverage gaps.
 
+## ISA requirements and target capabilities
+
+ISA support and scheduling support are independent. An instruction may parse
+and be supported by the CPU, yet lack a latency or execution-unit entry in
+Slothy. Conversely, a timing-table entry does not establish ISA availability.
+
+`isa.py` holds a small feature registry with earliest architectural availability
+and instruction-level prerequisites. These versions mean "permitted from",
+not "implemented by every CPU of this version". Target capabilities are
+explicit: no feature is enabled merely by comparing architecture version numbers,
+and Armv9 is not treated as a numeric superset of all Armv8 extensions.
+For future DotProd/I8MM definitions the registry also records the compiler
+architecture defaults: Armv8.4-A and Armv8.6-A respectively, versus optional
+availability from Armv8.2-A for both. These are reference metadata, not an
+automatic target-feature expansion rule; an omitted default means unspecified.
+
+The initial target profiles cover Cortex-A55 (`armv8.2-a`) and Cortex-A320/A520
+(`armv9.2-a`). They are partial profiles, not exhaustive processor feature lists:
+
+| Registered feature | A55 default | A320/A520 default |
+| --- | --- | --- |
+| FP, Advanced SIMD, FP16, RDM, CRC32 | Enabled | Enabled |
+| AES, PMULL | Assumed enabled | Assumed enabled |
+| SHA3 | Unsupported | Assumed enabled |
+| DotProd | Assumed enabled | Enabled |
+| I8MM | Unsupported | Enabled |
+
+Optional FP/Advanced SIMD and cryptographic facilities are assumed available
+where applicable. A55 dot-product support is also an implementation option.
+These defaults describe the modeled configuration, not a probe of the host or
+the deployment hardware. Override them for a reduced implementation or execution
+environment. Other target models have unknown capabilities until annotated;
+they do not silently inherit one of these profiles.
+
+### Instruction metadata
+
+For example, the existing vector FADD definition has:
+
+```json
+"required_features": ["FEAT_AdvSIMD"],
+"conditional_features": [
+  {"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}
+]
+```
+
+All unconditional requirements and matching conditional requirements must be
+satisfied. Dependencies are expanded, so Advanced SIMD also requires FP.
+`when` keys name datatype placeholders in the instruction pattern; values are
+case-insensitive exact matches. Multiple conditions in one rule are ANDed.
+FP by-element forms use `dt1: ["h"]`. Integer halfword arithmetic does not
+require FP16. Unknown feature names, duplicate requirements, and malformed
+conditions are rejected when loading JSON.
+
+Handwritten instruction classes use the same `required_features` and
+`conditional_features` attributes. Requirements must be declared on each
+concrete class: unlike operands, they are deliberately **not inherited**.
+For example, FP MLA subclasses integer MLA for scheduling, and PMULL subclasses
+an AES family, but neither relationship establishes the ISA requirements.
+Missing requirements mean unclassified, even if the parent has metadata.
+
+This increment annotates all 91 JSON NEON definitions, scalar CRC32 forms,
+selected scalar arithmetic/FP forms, and handwritten AES/PMULL, FP-lane, TBL,
+NOP, and forced-output INS forms. Other scalar and handwritten instructions
+remain unclassified. SQ(R)DMULH is baseline Advanced SIMD, not FEAT_RDM;
+RDM covers the later rounding multiply-accumulate/subtract forms, which are
+not currently defined here. DotProd and I8MM are registered for future use:
+**no SDOT/SMMLA parsers or timings are added by this change**.
+
+### Validation and configuration
+
+`config.isa_check` controls validation:
+
+- `warn` (default): reject known unsupported/disabled features, but warn and
+  continue for unclassified instructions or unknown target capabilities.
+- `strict`: also reject incomplete ISA metadata. This does not make an
+  unaudited instruction or target supported; additional annotations may be needed.
+- `off`: disable ISA checking explicitly, retaining legacy behavior.
+
+`config.isa_features` maps registered feature names to booleans. For example,
+from Python: `config.isa_features = {"FEAT_FP16": False}`. Overrides can disable
+features or explicitly assert support where a target's metadata is unknown.
+They cannot enable features declared unsupported by that CPU (such as I8MM
+on A55). Disabling a prerequisite also prevents instructions that require it.
+Overrides describe the usable subset; they do not add instruction definitions,
+timing entries, or change the processor architecture.
+
+The corresponding CLI options are:
+
+```sh
+-c isa_check=strict
+-c 'isa_features={FEAT_FP16:False}'
+```
+
+Checks run when constructing dataflow graphs, before scheduling and again when
+parsing/fusion callbacks rebuild them. Thus EOR-to-EOR3 fusion cannot silently
+introduce SHA3 on A55. `UnsupportedISA` reports a known incompatibility;
+`UnknownISA` reports incomplete metadata in strict mode. Missing timing entries
+remain separate `UnknownInstruction` scheduling-model errors. Checking is
+independent of `selftest` and functional-only scheduling. Architectures without
+the validation hook retain their existing behavior.
+
+Only instructions processed by Slothy are checked, not untouched file regions,
+external code, assembler architecture directives, or runtime OS enablement.
+Feature validation does not replace assembler encoding checks or execution tests.
+
+### Sources
+
+- [Arm compiler feature options](https://documentation-service.arm.com/static/671fa191ad463325b23263ce)
+  distinguish optional architectural availability from default enablement.
+- [Arm's dot-product overview](https://developer.arm.com/community/arm-community-blogs/b/tools-software-ides-blog/posts/exploring-the-arm-dot-product-instructions)
+  describes configurable A55 dot-product support.
+- [Cortex-A55 cryptographic extension TRM](https://documentation-service.arm.com/static/649ac68e38511951cb79901e)
+  describes the optional crypto facilities and identification registers.
+- [Cortex-A520 supported standards](https://support.arm.com/documentation/102517/0004/The-Cortex-A520--core/Supported-standards-and-specifications)
+  and [cryptographic extension TRM](https://documentation-service.arm.com/static/672e536f27eda361ad4da11a)
+  describe implemented features and configurable crypto support.
+- [Cortex-A320 introduction](https://newsroom.arm.com/blog/introducing-arm-cortex-a320-cpu)
+  and [software optimization guide](https://documentation-service.arm.com/static/680122175b1a8c5a27aa1aa7)
+  describe its architecture and instruction families.
+
 When extending an instruction:
 
 1. Add its definition, or retain a Python implementation for custom semantics.
@@ -188,6 +310,10 @@ operand roles, and malformed specifications. `test_aarch64_lane_restrictions.py`
 checks all 17 lane definitions, case-insensitive datatype round-trips,
 symbolic operands, fixed-register allocator enforcement, and assembler acceptance
 at the halfword/word register boundaries.
+
+`test_aarch64_isa.py` checks feature requirements and datatype conditions,
+configuration overrides, unknown-metadata policy, pre-scheduling rejection,
+fusion output validation, and strict straightline/software-pipelined scheduling.
 
 The later A320/A520 coverage update intentionally changes five migrated classes'
 A520 lookup results. Those results are tested in `test_armv9_models.py` instead

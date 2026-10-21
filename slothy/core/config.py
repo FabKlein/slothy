@@ -71,6 +71,35 @@ class Config(NestedPrint, LockAttributes):
         return self._outputs
 
     @property
+    def isa_check(self):
+        """ISA validation: warn on unknown metadata, strict rejection, or off.
+
+        Both warn and strict reject known unsupported features. This is currently
+        implemented by the AArch64 model only and is independent of selftest.
+        """
+        return self._isa_check
+
+    @isa_check.setter
+    def isa_check(self, value):
+        if value not in ("off", "warn", "strict"):
+            raise InvalidConfig("isa_check must be off, warn, or strict")
+        self._isa_check = value
+
+    @property
+    def isa_features(self):
+        """Explicit feature-name/boolean overrides for the selected target profile."""
+        return self._isa_features
+
+    @isa_features.setter
+    def isa_features(self, value):
+        if not isinstance(value, dict) or not all(
+            isinstance(key, str) and type(enabled) is bool
+            for key, enabled in value.items()
+        ):
+            raise InvalidConfig("isa_features must map feature names to booleans")
+        self._isa_features = value.copy()
+
+    @property
     def reserved_regs(self):
         """Set of architectural registers _not_ available for register renaming.
         May be unset (None) to pick the default reserved registers for the target
@@ -1407,6 +1436,9 @@ class Config(NestedPrint, LockAttributes):
         self._variable_size = False
 
         self._register_aliases = {}
+        self._isa_check = "warn"
+        self._isa_features = {}
+        self._isa_warning_cache = set()
         self._outputs = set()
 
         self._inputs_are_outputs = False
