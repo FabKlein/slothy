@@ -12,6 +12,7 @@ from slothy.targets.aarch64.dump_instruction_tables import (
     render_table,
 )
 from slothy.targets.aarch64.load_scalar_table import parse_table
+from slothy.targets.aarch64.instruction_templates import expand_instruction_templates
 
 
 class InstructionTableTests(unittest.TestCase):
@@ -33,11 +34,13 @@ class InstructionTableTests(unittest.TestCase):
                 table = DIRECTORY / f"aarch64_{kind}_inst.md"
                 self.assertEqual(table.read_text(encoding="utf8"), render_table(kind))
 
-    def test_tables_preserve_explicit_specification_fields(self):
+    def test_tables_preserve_expanded_specification_fields(self):
         for kind in KINDS:
             with self.subTest(kind=kind):
                 source = DIRECTORY / f"aarch64_{kind}_instructions.json"
-                entries = json.loads(source.read_text(encoding="utf8"))["instructions"]
+                entries = expand_instruction_templates(
+                    json.loads(source.read_text(encoding="utf8"))
+                )
                 self.assertEqual(
                     parse_table(DIRECTORY / f"aarch64_{kind}_inst.md"), entries
                 )
@@ -50,13 +53,27 @@ class InstructionTableTests(unittest.TestCase):
 
     def test_legacy_scalar_stdout(self):
         result = subprocess.run(
-            [sys.executable, str(DIRECTORY / "dump_scalar_inst.py")],
+            [sys.executable, "-S", str(DIRECTORY / "dump_scalar_inst.py")],
             cwd=Path(__file__).resolve().parent,
             capture_output=True,
             text=True,
             check=True,
         )
         self.assertEqual(result.stdout, render_table("scalar"))
+
+    def test_standalone_generator_without_site_packages(self):
+        subprocess.run(
+            [
+                sys.executable,
+                "-S",
+                str(DIRECTORY / "dump_instruction_tables.py"),
+                "--check",
+            ],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
 
 if __name__ == "__main__":

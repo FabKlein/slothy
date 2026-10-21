@@ -1,5 +1,35 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "templates": {
+    "neon_arithmetic_binary": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "AArch64Instruction",
+      "pattern": "{mnemonic} <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
+      "inputs": ["Vb", "Vc"],
+      "outputs": ["Va"]
+    },
+    "neon_logical_binary": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "AArch64NeonLogical",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"]
+    },
+    "neon_multiply_binary": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmul",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"]
+    },
+    "neon_accumulate": {
+      "required_features": ["FEAT_AdvSIMD"],
+      "base": "Vmla",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "in_outs": ["Vd"]
+    }
+  },
   "instructions": [
     {
       "name": "vfcmla",
@@ -34,43 +64,21 @@
     },
     {
       "name": "vadd",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64Instruction",
-      "pattern": "add <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
-      "inputs": [
-        "Vb",
-        "Vc"
-      ],
-      "outputs": [
-        "Va"
-      ]
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "add"
     },
     {
       "name": "vaddf",
-      "required_features": ["FEAT_AdvSIMD"],
-      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
-      "base": "AArch64Instruction",
-      "pattern": "fadd <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
-      "inputs": [
-        "Vb",
-        "Vc"
-      ],
-      "outputs": [
-        "Va"
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "fadd",
+      "conditional_features": [
+        {"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}
       ]
     },
     {
       "name": "vsub",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64Instruction",
-      "pattern": "sub <Va>.<dt>, <Vb>.<dt>, <Vc>.<dt>",
-      "inputs": [
-        "Vb",
-        "Vc"
-      ],
-      "outputs": [
-        "Va"
-      ]
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "sub"
     },
     {
       "name": "vmov",
@@ -449,29 +457,13 @@
     },
     {
       "name": "vand",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonLogical",
-      "pattern": "and <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_logical_binary",
+      "mnemonic": "and"
     },
     {
       "name": "vbic",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonLogical",
-      "pattern": "bic <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_logical_binary",
+      "mnemonic": "bic"
     },
     {
       "name": "vbic_imm_shifted",
@@ -496,16 +488,8 @@
     },
     {
       "name": "vorr",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonLogical",
-      "pattern": "orr <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_logical_binary",
+      "mnemonic": "orr"
     },
     {
       "name": "vorr_imm",
@@ -518,29 +502,13 @@
     },
     {
       "name": "vorn",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonLogical",
-      "pattern": "orn <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_logical_binary",
+      "mnemonic": "orn"
     },
     {
       "name": "veor",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "AArch64NeonLogical",
-      "pattern": "eor <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_logical_binary",
+      "mnemonic": "eor"
     },
     {
       "name": "vbif",
@@ -582,43 +550,21 @@
     },
     {
       "name": "vmul",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmul",
-      "pattern": "mul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
-      ]
+      "template": "neon_multiply_binary",
+      "mnemonic": "mul"
     },
     {
       "name": "vmulf",
-      "required_features": ["FEAT_AdvSIMD"],
-      "conditional_features": [{"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}],
-      "base": "Vmul",
-      "pattern": "fmul <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "outputs": [
-        "Vd"
+      "template": "neon_multiply_binary",
+      "mnemonic": "fmul",
+      "conditional_features": [
+        {"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}
       ]
     },
     {
       "name": "vmla",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmla",
-      "pattern": "mla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_accumulate",
+      "mnemonic": "mla"
     },
     {
       "name": "vfmla",
@@ -629,16 +575,8 @@
     },
     {
       "name": "vmls",
-      "required_features": ["FEAT_AdvSIMD"],
-      "base": "Vmla",
-      "pattern": "mls <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
-      "inputs": [
-        "Va",
-        "Vb"
-      ],
-      "in_outs": [
-        "Vd"
-      ]
+      "template": "neon_accumulate",
+      "mnemonic": "mls"
     },
     {
       "name": "vfmls",

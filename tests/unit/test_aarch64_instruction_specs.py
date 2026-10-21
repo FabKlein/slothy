@@ -162,7 +162,7 @@ class InstructionSpecTests(unittest.TestCase):
             ([self.entry(dependsOnFlags="yes")], {}),
             ([self.entry(inputs=["Xmissing"])], {}),
             ([self.entry(addr_source={"type": "inputs", "index": -1})], {}),
-            ([self.entry()], {"schema_version": 2}),
+            ([self.entry()], {"schema_version": 3}),
             ([self.entry()], {"unexpected": []}),
         ):
             with self.subTest(entries=entries, options=options):

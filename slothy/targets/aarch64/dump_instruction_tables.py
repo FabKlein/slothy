@@ -6,14 +6,21 @@ import html
 import json
 from pathlib import Path
 
+if __package__:
+    from .instruction_templates import expand_instruction_templates
+else:
+    from instruction_templates import expand_instruction_templates
+
 DIRECTORY = Path(__file__).resolve().parent
 KINDS = ("scalar", "neon")
 
 
 def render_table(kind):
-    """Render explicit JSON fields, without expanding inherited instruction metadata."""
+    """Render expanded JSON fields, without expanding Python-inherited metadata."""
     source = DIRECTORY / f"aarch64_{kind}_instructions.json"
-    instructions = json.loads(source.read_text(encoding="utf8"))["instructions"]
+    instructions = expand_instruction_templates(
+        json.loads(source.read_text(encoding="utf8"))
+    )
     fields = ["name"] + sorted(
         {key for instruction in instructions for key in instruction} - {"name"}
     )
@@ -28,7 +35,7 @@ def render_table(kind):
         "python3 slothy/targets/aarch64/dump_instruction_tables.py",
         "```",
         "",
-        "Only explicit JSON fields are shown. Operand fields may inherit from the base;",
+        "JSON templates are expanded. Operand fields may still inherit from the base;",
         "blank ISA requirements mean unclassified, not baseline-safe.",
         "This is not a complete ISA or CPU timing reference. See",
         "[the specification guide](README.instructions.md) for scope and semantics.",

@@ -9,29 +9,16 @@ import re
 from pathlib import Path
 
 from sympy import simplify
+from slothy.targets.aarch64.instruction_templates import (
+    FLAG_FIELDS as _FLAGS,
+    INSTRUCTION_FIELDS as _FIELDS,
+    MEMORY_FIELDS as _MEMORY,
+    OPERAND_FIELDS as _OPERANDS,
+    expand_instruction_templates,
+)
 from slothy.targets.aarch64.isa import validate_requirements
 from slothy.targets.exceptions import ParsingException
 
-_OPERANDS = ("inputs", "outputs", "in_outs")
-_FLAGS = ("dependsOnFlags", "modifiesFlags")
-_MEMORY = (
-    "set_increment_from_immediate",
-    "pre_index_from_immediate",
-    "restore_immediate_from_pre_index",
-)
-_FIELDS = {
-    "name",
-    "base",
-    "pattern",
-    "addr_source",
-    "register_restrictions",
-    "required_features",
-    "conditional_features",
-    "operand_values",
-    *_OPERANDS,
-    *_FLAGS,
-    *_MEMORY,
-}
 _RESTRICTION_FIELDS = {
     "inputs": "args_in_restrictions",
     "outputs": "args_out_restrictions",
@@ -200,15 +187,12 @@ def _boolean(value):
 
 
 def read_instruction_specs(path):
-    """Read and validate a specification, accepting legacy unversioned files."""
+    """Expand and validate v1/v2 specifications, including legacy unversioned files."""
     data = json.loads(Path(path).read_text(encoding="utf8"))
-    if not isinstance(data, dict) or set(data) - {"schema_version", "instructions"}:
-        raise ValueError(f"{path}: unsupported instruction specification")
-    if data.get("schema_version", 1) != 1:
-        raise ValueError(f"{path}: unsupported schema_version")
-    entries = data.get("instructions")
-    if not isinstance(entries, list):
-        raise ValueError(f"{path}: instructions must be a list")
+    try:
+        entries = expand_instruction_templates(data)
+    except ValueError as exc:
+        raise ValueError(f"{path}: {exc}") from exc
     names = set()
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) - _FIELDS:

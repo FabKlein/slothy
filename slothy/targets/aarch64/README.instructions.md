@@ -26,8 +26,8 @@ Both JSON files are included in built packages.
 JSON is the source of truth. The readable tables
 [aarch64_scalar_inst.md](aarch64_scalar_inst.md) and
 [aarch64_neon_inst.md](aarch64_neon_inst.md) are generated documentation;
-do not edit them by hand. They show only explicit JSON fields, not inherited
-metadata, Python-only definitions, or CPU timings.
+do not edit them by hand. They show concrete JSON fields after template expansion,
+not Python-inherited metadata, Python-only definitions, or CPU timings.
 
 After changing either specification, regenerate both tables from the repository root:
 
@@ -61,8 +61,9 @@ Add an entry to the relevant JSON file; no matching Python class is needed:
 }
 ```
 
-The file contains `"schema_version": 1` and an `"instructions"` array. The
-existing unversioned scalar file is also accepted as version 1. Unknown fields,
+The file contains an `"instructions"` array. Version 1 contains explicit
+definitions; version 2 additionally supports named templates (used by the NEON
+file). The existing unversioned scalar file is also accepted as version 1. Unknown fields,
 duplicate instruction names, invalid operand placeholders, and malformed
 booleans are rejected. Class names must not overwrite existing Python names.
 
@@ -88,6 +89,65 @@ from the base class. For example, `vfmla` inherits its read/write accumulator
 from `vmla`. Define bases before subclasses. If adding a concrete instruction
 subclass, ensure its concrete parent remains in parser discovery as well;
 `iter_aarch64_instructions()` explicitly retains `vmla` and `vmls` for this reason.
+
+## Named templates (schema version 2)
+
+Templates share JSON fields without introducing Python classes or changing
+instruction-family inheritance. For example:
+
+```json
+{
+  "schema_version": 2,
+  "templates": {
+    "neon_logical_binary": {
+      "base": "AArch64NeonLogical",
+      "pattern": "{mnemonic} <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": ["Va", "Vb"],
+      "outputs": ["Vd"],
+      "required_features": ["FEAT_AdvSIMD"]
+    }
+  },
+  "instructions": [
+    {"name": "vand", "template": "neon_logical_binary", "mnemonic": "and"},
+    {"name": "veor", "template": "neon_logical_binary", "mnemonic": "eor"}
+  ]
+}
+```
+
+The loader expands each reference into an independent concrete definition before
+ordinary validation and class generation. The documentation generator uses the
+same expansion, so tables display full assembly patterns and operand roles,
+not template references. The standalone generator remains standard-library-only.
+
+- `templates` is an optional object mapping identifier names to field defaults.
+  Templates may contain instruction fields other than `name`; they cannot
+  contain `template` or `mnemonic`. There is no nested template inheritance.
+- Each instruction supplies its own `name` and may select exactly one template.
+  Its explicit fields override the template's fields. Lists and dictionaries
+  replace whole fields; they are not concatenated or recursively merged.
+  Use `[]` or `{}` to clear the corresponding defaults. When changing operand
+  roles, explicitly clear the old role as well as supplying the new one.
+- `{mnemonic}` is the only substitution parameter, allowed once as the leading
+  token of a templated pattern. Supply `mnemonic` on that instruction; it must
+  be a single mnemonic, not arbitrary assembly. Literal register-list braces
+  such as `{<Va>.<dt>}` are preserved. This is not Python string formatting.
+- A template can instead contain a fixed pattern, or the instruction can
+  override the pattern entirely. Omit `mnemonic` when no substitution is needed.
+  An explicit instruction without `template` retains the version-1 syntax.
+- Names, definition order, bases, and operand placeholder spelling are preserved.
+  Template defaults for ISA requirements become explicit metadata on each
+  expanded instruction; this does not enable ISA inheritance from Python bases.
+- Unknown templates/fields, nested template references, missing substitutions,
+  duplicate instruction names, and invalid expanded definitions are rejected.
+  Version 1 and unversioned files reject template syntax and retain their
+  existing behavior.
+
+The initial migration covers 12 definitions in four templates: ADD/FADD/SUB,
+AND/BIC/ORR/ORN/EOR, MUL/FMUL, and MLA/MLS. FP16 conditions remain explicit
+overrides on FADD/FMUL. FP accumulator subclasses retain their existing Python
+inheritance. Lane, memory, and exceptional forms remain explicit for now.
+This is a representation-only change: it adds no accepted operand forms, ISA
+features, timing entries, or new inheritance relationships.
 
 ## Finite operand values and FCMLA
 
@@ -398,6 +458,14 @@ operand roles, and malformed specifications. `test_aarch64_lane_restrictions.py`
 checks all 17 lane definitions, case-insensitive datatype round-trips,
 symbolic operands, fixed-register allocator enforcement, and assembler acceptance
 at the halfword/word register boundaries.
+
+`test_aarch64_instruction_templates.py` checks version compatibility, expansion,
+whole-field overrides, independent mutable fields, preserved class bases,
+register-list braces, malformed templates, and validation after expansion.
+The 12 migrated definitions are compared field-for-field against a pre-template
+fixture, including their order and exact operand placeholders. Existing parser,
+ISA, CPU-model, scheduling, and execution regressions continue to exercise the
+same generated classes.
 
 `test_aarch64_isa.py` checks feature requirements and datatype conditions,
 configuration overrides, unknown-metadata policy, pre-scheduling rejection,

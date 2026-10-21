@@ -8,7 +8,7 @@ Regenerate both tables from the repository root with:
 python3 slothy/targets/aarch64/dump_instruction_tables.py
 ```
 
-Only explicit JSON fields are shown. Operand fields may inherit from the base;
+JSON templates are expanded. Operand fields may still inherit from the base;
 blank ISA requirements mean unclassified, not baseline-safe.
 This is not a complete ISA or CPU timing reference. See
 [the specification guide](README.instructions.md) for scope and semantics.
