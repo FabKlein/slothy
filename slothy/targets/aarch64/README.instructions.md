@@ -3,10 +3,11 @@
 Simple instruction definitions are generated from two JSON files:
 
 - `aarch64_scalar_instructions.json`: scalar instructions (173 definitions).
-- `aarch64_neon_instructions.json`: 145 definitions (143 migrated plus two new),
+- `aarch64_neon_instructions.json`: 146 definitions (143 migrated plus three new),
   including vector FADD/FMUL, arithmetic, logical, shuffle, shift forms,
   and 17 register-restricted integer by-element forms. The new definitions are
-  `fmov_w_to_s` (`fmov Sd,Wn`) and `sfadd_d` (`fadd Dd,Da,Db`).
+  `fmov_w_to_s` (`fmov Sd,Wn`), `sfadd_d` (`fadd Dd,Da,Db`), and `vfcmla`
+  (FP16/FP32 vector FCMLA).
   The second migration batch adds 28 existing declarations: TRN1/TRN2,
   AES/PMULL and AES wrapper pseudo-instructions, comparisons, UADDLV,
   GPR/vector transfers, and NOP. No instruction timings change in this migration.
@@ -73,6 +74,7 @@ booleans are rejected. Class names must not overwrite existing Python names.
 | `inputs` / `outputs` / `in_outs` | Read-only, write-only, and read/write register placeholders |
 | `dependsOnFlags` / `modifiesFlags` | Read/write dependencies on architectural flags |
 | `register_restrictions` | Conditional or unconditional allocation rules for named operands; see below |
+| `operand_values` | Finite legal values for named datatype placeholders and a single immediate, checked when parsing and writing |
 | `required_features` | Explicit ISA requirements for this concrete instruction; omitted means unclassified, `[]` means baseline A64 |
 | `conditional_features` | Additional ISA requirements selected by datatype placeholders; see below |
 | `addr_source` | Address operand: `{"type": "inputs", "index": 0}`, `in_outs`, or `{"type": "literal", "value": "sp"}` |
@@ -86,6 +88,39 @@ from the base class. For example, `vfmla` inherits its read/write accumulator
 from `vmla`. Define bases before subclasses. If adding a concrete instruction
 subclass, ensure its concrete parent remains in parser discovery as well;
 `iter_aarch64_instructions()` explicitly retains `vmla` and `vmls` for this reason.
+
+## Finite operand values and FCMLA
+
+`vfcmla` models the destination as a read/write accumulator and the two source
+vectors as inputs. Its pattern uses the same `<dt>` for all three operands,
+requiring matching arrangements. It also declares:
+
+```json
+"operand_values": {
+  "dt": ["4h", "8h", "2s", "4s"],
+  "imm": [0, 90, 180, 270]
+}
+```
+
+These are parser/writer legality checks, not allocator restrictions. Datatype
+keys must name an existing `dt`/`dtN` placeholder; every occurrence of that name
+must have the same allowed value, case-insensitively. `imm` requires exactly one
+`<imm>` placeholder and a nonempty list of distinct JSON integers. Immediate
+expressions must simplify to an allowed integer; unresolved symbols are rejected.
+Empty, duplicate, or malformed value sets are rejected when loading the JSON.
+Rules apply to the concrete definition and are not inherited from scheduling
+families. Existing definitions without these rules retain their previous behavior.
+
+FCMLA accepts `.4h`, `.8h`, `.2s`, and `.4s`, with rotations `#0`, `#90`, `#180`,
+and `#270`. FP64 and indexed/by-element forms are not included in this increment.
+For example: `fcmla v9.8h, v3.8h, v2.8h, #90`.
+It requires `FEAT_FCMA` (Armv8.3-A), plus `FEAT_FP16` for the half-precision forms.
+A320/A520 have explicit support and timings; the A55 profile rejects FCMA.
+
+AArch64 functional self-tests enable LLVM's `complxnum` and `fullfp16` features
+and use Unicorn's maximum-feature CPU with FP/SIMD access enabled. This is a
+functional emulator configuration, not a performance model or evidence of target
+ISA support; the separate target ISA validation still runs normally.
 
 ## Conditional register restrictions
 
@@ -150,9 +185,9 @@ allocator/scheduling tests on A320, A520, and A55.
 ## What stays in Python
 
 This is an incremental migration, not a new assembler or a complete NEON ISA
-description. `<dt>`, `<index>`, and immediate placeholders retain the existing
-parser semantics; JSON does not yet add architectural arrangement/lane-range
-validation or consecutive-register groups.
+description. Except for explicit `operand_values` rules, `<dt>`, `<index>`, and
+immediate placeholders retain the existing parser semantics. JSON does not yet
+express lane-range relationships or consecutive-register groups.
 
 The remaining concrete Python declarations have `make`/`write` methods, including
 FP by-element lane validation, forced-output variants, and multi-register
@@ -235,6 +270,7 @@ The initial target profiles cover Cortex-A55 (`armv8.2-a`) and Cortex-A320/A520
 | SHA3 | Unsupported | Assumed enabled |
 | DotProd | Assumed enabled | Enabled |
 | I8MM | Unsupported | Enabled |
+| FCMA | Unsupported | Enabled |
 
 Optional FP/Advanced SIMD and cryptographic facilities are assumed available
 where applicable. A55 dot-product support is also an implementation option.
@@ -269,7 +305,7 @@ For example, FP MLA subclasses integer MLA for scheduling, and PMULL subclasses
 an AES family, but neither relationship establishes the ISA requirements.
 Missing requirements mean unclassified, even if the parent has metadata.
 
-All 119 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
+All 146 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
 forms, selected scalar arithmetic/FP forms, and handwritten FP-lane, TBL,
 forced-output FMOV, and forced-output INS forms. Other scalar and handwritten instructions
 remain unclassified. SQ(R)DMULH is baseline Advanced SIMD, not FEAT_RDM;
@@ -316,6 +352,10 @@ Feature validation does not replace assembler encoding checks or execution tests
 
 ### Sources
 
+- [Arm instruction reference, FCMLA vector](https://documentation-service.arm.com/static/6245c734b059dc5ff9a8bdab)
+  specifies matching arrangements, rotations, and Armv8.3-A availability.
+- [Cortex-A320 TRM, supported features](https://documentation-service.arm.com/static/67f03a3d98aa3c3b6eea9633)
+  lists FEAT_FCMA support explicitly.
 - [Arm compiler feature options](https://documentation-service.arm.com/static/671fa191ad463325b23263ce)
   distinguish optional architectural availability from default enablement.
 - [Arm's dot-product overview](https://developer.arm.com/community/arm-community-blogs/b/tools-software-ides-blog/posts/exploring-the-arm-dot-product-instructions)

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from sympy import simplify
 from slothy.targets.aarch64.isa import validate_requirements
+from slothy.targets.exceptions import ParsingException
 
 _OPERANDS = ("inputs", "outputs", "in_outs")
 _FLAGS = ("dependsOnFlags", "modifiesFlags")
@@ -26,6 +27,7 @@ _FIELDS = {
     "register_restrictions",
     "required_features",
     "conditional_features",
+    "operand_values",
     *_OPERANDS,
     *_FLAGS,
     *_MEMORY,
@@ -35,6 +37,57 @@ _RESTRICTION_FIELDS = {
     "outputs": "args_out_restrictions",
     "in_outs": "args_in_out_restrictions",
 }
+
+
+def _validate_operand_values(rules, pattern):
+    """Validate finite allowed-value sets for datatype and immediate placeholders."""
+    if not isinstance(rules, dict):
+        raise ValueError("operand_values must map placeholders to allowed values")
+    for name, values in rules.items():
+        if (
+            not isinstance(name, str)
+            or not re.fullmatch(r"dt\d*|imm", name)
+            or f"<{name}>" not in pattern
+            or not isinstance(values, list)
+            or not values
+        ):
+            raise ValueError(f"Invalid operand_values rule: {name!r}: {values!r}")
+        if name == "imm":
+            valid = pattern.count("<imm>") == 1 and all(
+                type(value) is int for value in values
+            )
+            normalized = values
+        else:
+            valid = all(isinstance(value, str) and value for value in values)
+            normalized = [str(value).lower() for value in values]
+        if not valid or len(set(normalized)) != len(values):
+            raise ValueError(f"Invalid operand_values list for {name!r}")
+
+
+def _check_operand_values(obj, rules, pattern):
+    """Reject unsupported arrangements or unresolved/illegal finite immediates."""
+    if not rules:
+        return
+    datatypes = re.findall(r"<(dt\d*)>", pattern)
+    actual = obj.datatype if isinstance(obj.datatype, list) else [obj.datatype]
+    for name, allowed in rules.items():
+        if name == "imm":
+            try:
+                value = simplify(obj.immediate)
+                valid = value.is_Integer is True and int(value) in allowed
+            except (AttributeError, TypeError, ValueError, SyntaxError):
+                valid = False
+        else:
+            values = [
+                str(actual[i]).lower() for i, key in enumerate(datatypes) if key == name
+            ]
+            valid = len(set(values)) == 1 and values[0] in [
+                value.lower() for value in allowed
+            ]
+        if not valid:
+            raise ParsingException(
+                f"{pattern.split()[0]}: {name} must be one of {allowed}"
+            )
 
 
 def _restriction_registers(rule):
@@ -179,6 +232,7 @@ def read_instruction_specs(path):
             if field in entry:
                 entry[field] = _boolean(entry[field])
         _validate_restrictions(entry.get("register_restrictions", []), entry["pattern"])
+        _validate_operand_values(entry.get("operand_values", {}), entry["pattern"])
         validate_requirements(entry)
         addr = entry.get("addr_source")
         if addr is not None:
@@ -204,6 +258,7 @@ def read_instruction_specs(path):
 def _make_factory(builder, spec, restrictions):
     def make(cls, src):
         obj = builder.build(cls, src)
+        _check_operand_values(obj, spec.get("operand_values", {}), spec["pattern"])
         obj.increment = (
             obj.immediate if spec.get("set_increment_from_immediate") else None
         )
@@ -222,9 +277,11 @@ def _make_factory(builder, spec, restrictions):
     return make
 
 
-def _add_write(cls):
+def _add_write(cls, restore_offset):
     def write(self):
-        self.immediate = simplify(self.pre_index)
+        if restore_offset:
+            self.immediate = simplify(self.pre_index)
+        _check_operand_values(self, self.operand_values, self.pattern)
         return super(cls, self).write()
 
     cls.write = write
@@ -247,6 +304,8 @@ def generate_instruction_classes(specs, namespace, builder, register=None):
         attrs = {"pattern": entry["pattern"], "__module__": namespace["__name__"]}
         attrs["required_features"] = entry.get("required_features")
         attrs["conditional_features"] = entry.get("conditional_features", [])
+        # Legality rules describe this concrete pattern, not its scheduling family.
+        attrs["operand_values"] = entry.get("operand_values", {})
         attrs.update({key: entry[key] for key in (*_OPERANDS, *_FLAGS) if key in entry})
         rules = entry.get(
             "register_restrictions", getattr(base, "register_restrictions", [])
@@ -256,8 +315,8 @@ def generate_instruction_classes(specs, namespace, builder, register=None):
         attrs["register_restrictions"] = rules
         cls = type(name, (base,), attrs)
         cls.make = classmethod(_make_factory(builder, entry, restrictions))
-        if entry.get("restore_immediate_from_pre_index"):
-            _add_write(cls)
+        if entry.get("restore_immediate_from_pre_index") or attrs["operand_values"]:
+            _add_write(cls, entry.get("restore_immediate_from_pre_index", False))
         namespace[name] = cls
         if register is not None:
             register(cls)

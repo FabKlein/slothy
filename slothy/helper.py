@@ -1688,6 +1688,9 @@ class SelfTest:
             )
             # Setup emulator
             mu = Uc(config.arch.unicorn_arch, config.arch.unicorn_mode)
+            setup = getattr(config.arch, "unicorn_setup", None)
+            if setup is not None:
+                setup(mu)
             # Copy initial register contents into emulator
             for r, v in initial_register_contents.items():
                 ur = config.arch.RegisterType.unicorn_reg_by_name(r)

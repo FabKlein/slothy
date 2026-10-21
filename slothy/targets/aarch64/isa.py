@@ -22,6 +22,7 @@ FEATURES = {
     "FEAT_FP": Feature("armv8.0-a"),
     "FEAT_AdvSIMD": Feature("armv8.0-a", ("FEAT_FP",)),
     "FEAT_FP16": Feature("armv8.2-a", ("FEAT_FP",)),
+    "FEAT_FCMA": Feature("armv8.3-a", ("FEAT_AdvSIMD",)),
     "FEAT_RDM": Feature("armv8.1-a", ("FEAT_AdvSIMD",)),
     "FEAT_CRC32": Feature("armv8.0-a"),
     "FEAT_AES": Feature("armv8.0-a", ("FEAT_AdvSIMD",)),

@@ -9,6 +9,7 @@ Sources:
 Use sections 3.3/3.6 for scalar operations, 3.4 for integer multiply,
 3.7/3.8 for scalar memory, 3.12 for scalar FP arithmetic,
 3.13 for FMOV, 3.14 for vector pairs, 3.16/3.19 for vector operations,
+3.17 for vector FP arithmetic including FCMLA,
 3.20/3.21 for structure memory, and 3.23 for CRC.
 
 ## Scope
@@ -18,6 +19,17 @@ shifted MOVK, SXTB/UXTB, CRC32/CRC32C, the missing SIMD transfers,
 register USHL, two-table TBL, W-register pairs, two-register LD1,
 four-register post-increment ST1, and lane LD2. A320 also gains Q-pair loads;
 A520's existing Q-pair entries are retained.
+
+FP16/FP32 vector FCMLA is supported for `.4h`, `.8h`, `.2s`, and `.4s`, with
+rotations 0, 90, 180, and 270 degrees. Both cores use four-cycle latency for
+accumulator and either source-operand dependencies, without a shorter MAC bypass.
+Following SWOG section 3.17 (A320 page 29; A520 page 34), A320 models one FCMLA
+per cycle and A520 (2x128) two per cycle: one-cycle occupancy on VEC0 for A320,
+or on either VEC0 or VEC1 for A520. Do not reserve both A520 resources together
+or encode fractional resource occupancy. These abstract resources approximate
+VMAC scheduling; they do not establish all mixed-instruction contention behavior.
+The rates count individual FCMLA instructions, not pairs of rotations making up
+a complete complex multiply-accumulate. Indexed forms and FP64 are not included.
 
 A subsequent fix adds A520's missing `vmul_lane` execution-unit entry for
 integer MUL by element, using either VEC0 or VEC1 like vector MUL. Existing

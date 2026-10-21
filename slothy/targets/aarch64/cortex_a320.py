@@ -63,6 +63,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     adds,
     mul_xform,
     sfadd_d,
+    vfcmla,
     Ldp_W,
     Stp_W,
     q_ld1_2,
@@ -238,6 +239,7 @@ isa = TargetISA(
             "FEAT_FP",
             "FEAT_AdvSIMD",
             "FEAT_FP16",
+            "FEAT_FCMA",
             "FEAT_RDM",
             "FEAT_CRC32",
             "FEAT_AES",
@@ -335,6 +337,7 @@ _TRANSFERS = (fmov_d_form, fmov_s_form, vdup_w, mov_wtov_s) + FMOV_GPR_TO_VEC
 
 
 execution_units = {
+    vfcmla: ExecutionUnit.VEC0,
     mul_xform: ExecutionUnit.SCALAR_MUL(),
     sfadd_d: ExecutionUnit.VEC0,
     is_fp32_vector_arithmetic: ExecutionUnit.VEC0,
@@ -524,6 +527,7 @@ execution_units = {
 }
 
 inverse_throughput = {
+    vfcmla: 1,
     mul_xform: 2,
     sfadd_d: 1,
     is_fp32_vector_arithmetic: 1,
@@ -618,6 +622,7 @@ inverse_throughput = {
 }
 
 default_latencies = {
+    vfcmla: 4,
     (mul_xform, sfadd_d): 4,
     is_fp32_vector_arithmetic: 4,
     _SCALAR_ADDITIONS: 1,

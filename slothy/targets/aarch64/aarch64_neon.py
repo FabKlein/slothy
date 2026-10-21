@@ -73,6 +73,8 @@ from unicorn import (
     UC_MODE_ARM,
 )
 from unicorn.arm64_const import (
+    UC_CPU_ARM64_MAX,
+    UC_ARM64_REG_CPACR_EL1,
     UC_ARM64_REG_X0,
     UC_ARM64_REG_X1,
     UC_ARM64_REG_X2,
@@ -158,10 +160,16 @@ llvm_mca_arch = "aarch64"
 llvm_mc_arch = "aarch64"
 # Enable llvm-mc feature flags for instruction extensions used in the model.
 # Add flags here as new instruction families are added.
-llvm_mc_attr = "aes,crc"
+llvm_mc_attr = "aes,crc,complxnum,fullfp16"
 
 unicorn_arch = UC_ARCH_ARM64
 unicorn_mode = UC_MODE_ARM
+
+
+def unicorn_setup(emulator):
+    """Enable modeled extensions for functional tests; target ISA checks are separate."""
+    emulator.ctl_set_cpu_model(UC_CPU_ARM64_MAX)
+    emulator.reg_write(UC_ARM64_REG_CPACR_EL1, 3 << 20)
 
 
 class RegisterType(Enum):

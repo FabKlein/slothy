@@ -14,6 +14,7 @@ from slothy.targets.aarch64.instruction_loader import (
     generate_instruction_classes,
     read_instruction_specs,
 )
+from slothy.targets.exceptions import ParsingException
 
 
 class FakeInstruction:
@@ -67,7 +68,7 @@ class InstructionSpecTests(unittest.TestCase):
             {c["definition"] for c in cases}
             | {c["definition"] for c in second_batch}
             | {c["definition"] for c in memory_batch}
-            | {"fmov_w_to_s", "sfadd_d"}
+            | {"fmov_w_to_s", "sfadd_d", "vfcmla"}
             | {"vqrdmulh_lane", "vqdmulh_lane", "vmul_lane", "vmla_lane", "vmls_lane"}
             | {
                 f"v{sign}{op}{upper}_lane"
@@ -167,6 +168,66 @@ class InstructionSpecTests(unittest.TestCase):
             with self.subTest(entries=entries, options=options):
                 with self.assertRaises(ValueError):
                     self.read(entries, **options)
+
+    def test_operand_values_validate_concrete_datatypes_and_immediates(self):
+        entry = self.entry(
+            pattern="op <Xa>.<dt>, <imm>", operand_values={"dt": ["4s"], "imm": [16]}
+        )
+        cls = self.generate(self.read([entry]))["example"]
+        self.assertEqual(cls.make("4S").immediate, 16)
+        with self.assertRaises(ParsingException):
+            cls.make("8h")
+        for immediate in ("symbol", "15", "31/2", None):
+            with (
+                self.subTest(immediate=immediate),
+                patch.object(
+                    FakeInstruction,
+                    "build",
+                    return_value=SimpleNamespace(datatype="4s", immediate=immediate),
+                ),
+                self.assertRaises(ParsingException),
+            ):
+                cls.make("unused")
+        with patch.object(
+            FakeInstruction,
+            "build",
+            return_value=SimpleNamespace(
+                datatype="4s",
+                immediate="8+8",
+            ),
+        ):
+            self.assertEqual(cls.make("unused").immediate, "8+8")
+
+    def test_invalid_operand_value_rules_fail_early(self):
+        for rules in (
+            [],
+            None,
+            {"Xa": ["x0"]},
+            {"dt1": ["4s"]},
+            {"dt": []},
+            {"dt": [4]},
+            {"dt": ["4s", "4S"]},
+            {"imm": []},
+            {"imm": [True]},
+            {"imm": [90.0]},
+            {"imm": ["90"]},
+            {"imm": [0, 0]},
+        ):
+            with self.subTest(rules=rules), self.assertRaises(ValueError):
+                self.read(
+                    [self.entry(pattern="op <Xa>.<dt>, <imm>", operand_values=rules)]
+                )
+        with self.assertRaises(ValueError):
+            self.read([self.entry(operand_values={"imm": [0]})])
+
+    def test_operand_value_rules_are_not_inherited_from_scheduling_families(self):
+        parent = self.entry(
+            pattern="op <Xa>.<dt>, <imm>", operand_values={"dt": ["4s"], "imm": [16]}
+        )
+        child = self.entry(name="child", base="example", pattern="op <Xa>.<dt>")
+        namespace = self.generate(self.read([parent, child]))
+        self.assertEqual(namespace["child"].operand_values, {})
+        self.assertEqual(namespace["child"].make("8h").datatype, "8h")
 
     def test_unknown_bases_and_name_collisions(self):
         for entry in (self.entry(base="Missing"), self.entry(name="Base")):

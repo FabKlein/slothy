@@ -2,6 +2,21 @@
   "schema_version": 1,
   "instructions": [
     {
+      "name": "vfcmla",
+      "base": "AArch64Instruction",
+      "pattern": "fcmla <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>, <imm>",
+      "inputs": ["Va", "Vb"],
+      "in_outs": ["Vd"],
+      "operand_values": {
+        "dt": ["4h", "8h", "2s", "4s"],
+        "imm": [0, 90, 180, 270]
+      },
+      "required_features": ["FEAT_FCMA"],
+      "conditional_features": [
+        {"when": {"dt": ["4h", "8h"]}, "requires": ["FEAT_FP16"]}
+      ]
+    },
+    {
       "name": "fmov_w_to_s",
       "required_features": ["FEAT_FP"],
       "base": "Fmov",

@@ -233,7 +233,7 @@ isa = TargetISA(
             "FEAT_DotProd",
         }
     ),
-    unsupported=frozenset({"FEAT_SHA3", "FEAT_I8MM"}),
+    unsupported=frozenset({"FEAT_SHA3", "FEAT_I8MM", "FEAT_FCMA"}),
 )
 
 
