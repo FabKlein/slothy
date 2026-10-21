@@ -7,7 +7,7 @@ from slothy.targets.aarch64 import aarch64_neon as arch
 from slothy.targets.aarch64 import cortex_a55, cortex_a520
 
 
-def observe(text):
+def observe(text, targets=None):
     inst = arch.Instruction.parser(SourceLine(text))[0]
     fields = (
         "args_in",
@@ -33,7 +33,7 @@ def observe(text):
     result["roundtrip_class"] = type(
         arch.Instruction.parser(SourceLine(inst.write()))[0]
     ).__name__
-    for target in (cortex_a55, cortex_a520):
+    for target in targets if targets is not None else (cortex_a55, cortex_a520):
         values = []
         for query in (
             target.get_units,

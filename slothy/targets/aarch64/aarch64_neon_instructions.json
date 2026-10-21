@@ -1376,6 +1376,888 @@
           }
         }
       ]
+    },
+    {
+      "name": "nop",
+      "base": "AArch64Instruction",
+      "required_features": [],
+      "pattern": "nop"
+    },
+    {
+      "name": "umov_d",
+      "base": "VecToGprMov",
+      "pattern": "umov <Xd>, <Va>.d[<index>]",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Xd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "mov_d",
+      "base": "VecToGprMov",
+      "pattern": "mov <Xd>, <Va>.d[<index>]",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Xd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "fmov_s_form",
+      "base": "Fmov",
+      "pattern": "fmov <Wd>, <Sa>",
+      "inputs": [
+        "Sa"
+      ],
+      "outputs": [
+        "Wd"
+      ],
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "fmov_d_form",
+      "base": "Fmov",
+      "pattern": "fmov <Xd>, <Da>",
+      "inputs": [
+        "Da"
+      ],
+      "outputs": [
+        "Xd"
+      ],
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "fmov_0",
+      "base": "Fmov",
+      "pattern": "fmov <Dd>, <Xa>",
+      "inputs": [
+        "Xa"
+      ],
+      "in_outs": [
+        "Dd"
+      ],
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "fmov_1",
+      "base": "Fmov",
+      "pattern": "fmov <Vd>.d[1], <Xa>",
+      "inputs": [
+        "Xa"
+      ],
+      "in_outs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "trn1",
+      "base": "Transpose",
+      "pattern": "trn1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "trn2",
+      "base": "Transpose",
+      "pattern": "trn2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "aesr",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesr <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "aesr_x2",
+      "base": "AArch64Instruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesr_x2 <Vd0>.16b, <Vd1>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd0",
+        "Vd1"
+      ]
+    },
+    {
+      "name": "aesr_x4",
+      "base": "AArch64Instruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesr_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd0",
+        "Vd1",
+        "Vd2",
+        "Vd3"
+      ]
+    },
+    {
+      "name": "aese_x4",
+      "base": "AArch64Instruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aese_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd0",
+        "Vd1",
+        "Vd2",
+        "Vd3"
+      ]
+    },
+    {
+      "name": "aesdr",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesdr <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "aese",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aese <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "aesmc",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesmc <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "aesd",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesd <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "aesimc",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_AES"
+      ],
+      "pattern": "aesimc <Vd>.16b, <Va>.16b",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "pmull1_q",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_PMULL"
+      ],
+      "pattern": "pmull <Vd>.1q, <Va>.1d, <Vb>.1d",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "pmull2_q",
+      "base": "AESInstruction",
+      "required_features": [
+        "FEAT_PMULL"
+      ],
+      "pattern": "pmull2 <Vd>.1q, <Va>.2d, <Vb>.2d",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ]
+    },
+    {
+      "name": "cmge",
+      "base": "ASimdCompare",
+      "pattern": "cmge <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmhi",
+      "base": "ASimdCompare",
+      "pattern": "cmhi <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmeq",
+      "base": "ASimdCompare",
+      "pattern": "cmeq <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmgt",
+      "base": "ASimdCompare",
+      "pattern": "cmgt <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmhs",
+      "base": "ASimdCompare",
+      "pattern": "cmhs <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>",
+      "inputs": [
+        "Va",
+        "Vb"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmle",
+      "base": "ASimdCompare",
+      "pattern": "cmle <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "cmlt",
+      "base": "ASimdCompare",
+      "pattern": "cmlt <Vd>.<dt>, <Va>.<dt>, <imm>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Vd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "vuaddlv_sform",
+      "base": "AArch64Instruction",
+      "pattern": "uaddlv <Sd>, <Va>.<dt>",
+      "inputs": [
+        "Va"
+      ],
+      "outputs": [
+        "Sd"
+      ],
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_ldr",
+      "base": "Ldr_Q",
+      "pattern": "ldr <Qa>, [<Xc>]",
+      "inputs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa"
+      ],
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ld1",
+      "base": "Ldr_Q",
+      "pattern": "ld1 {<Va>.<dt>}, [<Xc>]",
+      "inputs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Va"
+      ],
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "prefetch",
+      "base": "Ldr_Q",
+      "pattern": "prfm pld1lkeep, [<Xc>, <imm>]",
+      "inputs": [
+        "Xc"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "required_features": []
+    },
+    {
+      "name": "q_ldr_with_imm_hint",
+      "base": "Ldr_Q",
+      "pattern": "ldrh <Qa>, <Xc>, <imm>, <Th>",
+      "inputs": [
+        "Xc",
+        "Th"
+      ],
+      "outputs": [
+        "Qa"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "b_ldr_stack_with_inc",
+      "base": "AArch64Instruction",
+      "pattern": "ldr <Ba>, [sp, <imm>]",
+      "outputs": [
+        "Ba"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ldr1_stack",
+      "base": "Ldr_Q",
+      "pattern": "ld1r {<Va>.<dt>}, [sp]",
+      "outputs": [
+        "Va"
+      ],
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_ldr1_post_inc",
+      "base": "Ldr_Q",
+      "pattern": "ld1r {<Va>.<dt>}, [<Xa>], <imm>",
+      "outputs": [
+        "Va"
+      ],
+      "in_outs": [
+        "Xa"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_ldr_stack_with_inc",
+      "base": "Ldr_Q",
+      "pattern": "ldr <Qa>, [sp, <imm>]",
+      "outputs": [
+        "Qa"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ldr_with_inc",
+      "base": "Ldr_Q",
+      "pattern": "ldr <Qa>, [<Xc>, <imm>]",
+      "inputs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ld1_with_inc",
+      "base": "Ldr_Q",
+      "pattern": "ld1 {<Va>.<dt>}, [<Xc>, <imm>]",
+      "inputs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Va"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_ldp_with_inc",
+      "base": "Ldp_Q",
+      "pattern": "ldp <Qa>, <Qb>, [<Xc>, <imm>]",
+      "inputs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa",
+        "Qb"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 0
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ldr_with_inc_writeback",
+      "base": "Ldr_Q",
+      "pattern": "ldr <Qa>, [<Xc>, <imm>]!",
+      "in_outs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ldr_with_postinc",
+      "base": "Ldr_Q",
+      "pattern": "ldr <Qa>, [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_ld1_with_postinc",
+      "base": "Ldr_Q",
+      "pattern": "ld1 {<Va>.<dt>}, [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Va"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_ldp_with_postinc",
+      "base": "Ldp_Q",
+      "pattern": "ldp <Qa>, <Qb>, [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "outputs": [
+        "Qa",
+        "Qb"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str",
+      "base": "Str_Q",
+      "pattern": "str <Qa>, [<Xc>]",
+      "inputs": [
+        "Qa",
+        "Xc"
+      ],
+      "addr_source": {
+        "type": "inputs",
+        "index": 1
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str_with_imm_hint",
+      "base": "Str_Q",
+      "pattern": "strh <Qa>, <Xc>, <imm>, <Th>",
+      "inputs": [
+        "Qa",
+        "Xc"
+      ],
+      "outputs": [
+        "Th"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 1
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str_with_inc",
+      "base": "Str_Q",
+      "pattern": "str <Qa>, [<Xc>, <imm>]",
+      "inputs": [
+        "Qa",
+        "Xc"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 1
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str_stack_with_inc",
+      "base": "Str_Q",
+      "pattern": "str <Qa>, [sp, <imm>]",
+      "inputs": [
+        "Qa"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_stp_stack_with_inc",
+      "base": "AArch64Instruction",
+      "pattern": "stp <Qa>, <Qb>, [sp, <imm>]",
+      "inputs": [
+        "Qa",
+        "Qb"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "literal",
+        "value": "sp"
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_stp_with_inc",
+      "base": "Stp_Q",
+      "pattern": "stp <Qa>, <Qb>, [<Xc>, <imm>]",
+      "inputs": [
+        "Qa",
+        "Qb",
+        "Xc"
+      ],
+      "pre_index_from_immediate": true,
+      "addr_source": {
+        "type": "inputs",
+        "index": 2
+      },
+      "restore_immediate_from_pre_index": true,
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str_with_inc_writeback",
+      "base": "Str_Q",
+      "pattern": "str <Qa>, [<Xc>, <imm>]!",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Qa"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_str_with_postinc",
+      "base": "Str_Q",
+      "pattern": "str <Qa>, [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Qa"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
+    },
+    {
+      "name": "q_st1_with_postinc",
+      "base": "Str_Q",
+      "pattern": "st1 {<Va>.<dt>}, [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Va"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_st1_lane_with_postinc",
+      "base": "Str_Q",
+      "pattern": "st1 {<Va>.<dt>}[<index>], [<Xc>], <imm>",
+      "in_outs": [
+        "Xc"
+      ],
+      "inputs": [
+        "Va"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_AdvSIMD"
+      ]
+    },
+    {
+      "name": "q_stp_with_postinc",
+      "base": "Stp_Q",
+      "pattern": "stp <Qa>, <Qb>, [<Xc>], <imm>",
+      "inputs": [
+        "Qa",
+        "Qb"
+      ],
+      "in_outs": [
+        "Xc"
+      ],
+      "set_increment_from_immediate": true,
+      "addr_source": {
+        "type": "in_outs",
+        "index": 0
+      },
+      "required_features": [
+        "FEAT_FP"
+      ]
     }
   ]
 }

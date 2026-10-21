@@ -1,0 +1,2041 @@
+{
+  "description": "Python memory definitions at 995e8b4, before their JSON migration; existing model gaps are preserved.",
+  "cases": [
+    {
+      "definition": "q_ldr",
+      "source": "ldr q0, [x1]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": null,
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr q0, [x1]",
+        "roundtrip_class": "q_ldr",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ld1",
+      "source": "ld1 {v0.4s}, [x1]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": "4s",
+        "immediate": null,
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ld1",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ld1 {v0.4S}, [x1]",
+        "roundtrip_class": "q_ld1",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "prefetch",
+      "source": "prfm pld1lkeep, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "prefetch",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "prfm pld1lkeep, [x1, #32]",
+        "roundtrip_class": "prefetch",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr_with_imm_hint",
+      "source": "ldrh q0, x1, #32, t0",
+      "expected": {
+        "args_in": [
+          "x1",
+          "t0"
+        ],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr_with_imm_hint",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldrh q0, x1, #32, t0",
+        "roundtrip_class": "q_ldr_with_imm_hint",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "b_ldr_stack_with_inc",
+      "source": "ldr b0, [sp, #32]",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "sp",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "b_ldr_stack_with_inc",
+        "bases": [
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr b0, [sp, #32]",
+        "roundtrip_class": "b_ldr_stack_with_inc",
+        "cortex_a55": [
+          "[VEC0, VEC1]",
+          "1",
+          "3"
+        ],
+        "cortex_a320": [
+          "[VEC0]",
+          "1",
+          "3"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]"
+        ],
+        "neoverse_n1_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]"
+        ],
+        "aarch64_big_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.b_ldr_stack_with_inc'> for ldr b0, [sp, #32]"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": false
+      }
+    },
+    {
+      "definition": "q_ldr1_stack",
+      "source": "ld1r {v0.4s}, [sp]",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": "4s",
+        "immediate": null,
+        "index": null,
+        "addr": "sp",
+        "increment": null,
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr1_stack",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ld1r {v0.4S}, [sp]",
+        "roundtrip_class": "q_ldr1_stack",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]"
+        ],
+        "neoverse_n1_experimental": [
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]",
+          "UnknownInstruction: Multiple matches found for <class 'slothy.targets.aarch64.aarch64_neon.q_ldr1_stack'> for ld1r {v0.4S}, [sp]"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr1_post_inc",
+      "source": "ld1r {v0.4s}, [x1], #4",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": "4s",
+        "immediate": "4",
+        "index": null,
+        "addr": "x1",
+        "increment": "4",
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr1_post_inc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ld1r {v0.4S}, [x1], #4",
+        "roundtrip_class": "q_ldr1_post_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr_stack_with_inc",
+      "source": "ldr q0, [sp, #32]",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "sp",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr_stack_with_inc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr q0, [sp, #32]",
+        "roundtrip_class": "q_ldr_stack_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr_with_inc",
+      "source": "ldr q0, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr_with_inc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr q0, [x1, #32]",
+        "roundtrip_class": "q_ldr_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ld1_with_inc",
+      "source": "ld1 {v0.4s}, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [],
+        "datatype": "4s",
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ld1_with_inc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ld1 {v0.4S}, [x1, #32]",
+        "roundtrip_class": "q_ld1_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldp_with_inc",
+      "source": "ldp q0, q2, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "x1"
+        ],
+        "args_out": [
+          "v0",
+          "v2"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [
+          null,
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldp_with_inc",
+        "bases": [
+          "Ldp_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldp q0, q2, [x1, #32]",
+        "roundtrip_class": "q_ldp_with_inc",
+        "cortex_a55": [
+          "[SCALAR_LOAD]",
+          "4",
+          "6"
+        ],
+        "cortex_a320": [
+          "[[SCALAR_LOAD, SCALAR_STORE]]",
+          "2",
+          "3"
+        ],
+        "cortex_a520": [
+          "[[VECTOR_LD, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "4",
+          "6"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_inc'> for ldp q0, q2, [x1, #32]"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr_with_inc_writeback",
+      "source": "ldr q0, [x1, #16]!",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr_with_inc_writeback",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr q0, [x1, #16]!",
+        "roundtrip_class": "q_ldr_with_inc_writeback",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldr_with_postinc",
+      "source": "ldr q0, [x1], #16",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldr_with_postinc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldr q0, [x1], #16",
+        "roundtrip_class": "q_ldr_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ld1_with_postinc",
+      "source": "ld1 {v0.4s}, [x1], #16",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0"
+        ],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": "4s",
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ld1_with_postinc",
+        "bases": [
+          "Ldr_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ld1 {v0.4S}, [x1], #16",
+        "roundtrip_class": "q_ld1_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "2",
+          "4"
+        ],
+        "cortex_a520": [
+          "[VECTOR_LD, VECTOR_LD_ST]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[LOAD0, LOAD1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, LU0, LU1]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0, LU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_ldp_with_postinc",
+      "source": "ldp q0, q2, [x1], #32",
+      "expected": {
+        "args_in": [],
+        "args_out": [
+          "v0",
+          "v2"
+        ],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": "32",
+        "pre_index": null,
+        "args_in_restrictions": [],
+        "args_out_restrictions": [
+          null,
+          null
+        ],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_ldp_with_postinc",
+        "bases": [
+          "Ldp_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "ldp q0, q2, [x1], #32",
+        "roundtrip_class": "q_ldp_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "2",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[SCALAR_LOAD, SCALAR_STORE]]",
+          "2",
+          "3"
+        ],
+        "cortex_a520": [
+          "[[VECTOR_LD, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "4"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_ldp_with_postinc'> for ldp q0, q2, [x1], #32"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str",
+      "source": "str q0, [x1]",
+      "expected": {
+        "args_in": [
+          "v0",
+          "x1"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": null,
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": null,
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "str q0, [x1]",
+        "roundtrip_class": "q_str",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str_with_imm_hint",
+      "source": "strh q0, x1, #32, t0",
+      "expected": {
+        "args_in": [
+          "v0",
+          "x1"
+        ],
+        "args_out": [
+          "t0"
+        ],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [
+          null
+        ],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str_with_imm_hint",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "strh q0, x1, #32, t0",
+        "roundtrip_class": "q_str_with_imm_hint",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str_with_inc",
+      "source": "str q0, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "v0",
+          "x1"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str_with_inc",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "str q0, [x1, #32]",
+        "roundtrip_class": "q_str_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str_stack_with_inc",
+      "source": "str q0, [sp, #32]",
+      "expected": {
+        "args_in": [
+          "v0"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "sp",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str_stack_with_inc",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "str q0, [sp, #32]",
+        "roundtrip_class": "q_str_stack_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_stp_stack_with_inc",
+      "source": "stp q0, q2, [sp, #32]",
+      "expected": {
+        "args_in": [
+          "v0",
+          "v2"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "sp",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_stp_stack_with_inc",
+        "bases": [
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "stp q0, q2, [sp, #32]",
+        "roundtrip_class": "q_stp_stack_with_inc",
+        "cortex_a55": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "cortex_a320": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "cortex_a520": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "neoverse_n1_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "aarch64_big_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_stack_with_inc'> for stp q0, q2, [sp, #32]"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": false
+      }
+    },
+    {
+      "definition": "q_stp_with_inc",
+      "source": "stp q0, q2, [x1, #32]",
+      "expected": {
+        "args_in": [
+          "v0",
+          "v2",
+          "x1"
+        ],
+        "args_out": [],
+        "args_in_out": [],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": null,
+        "pre_index": "32",
+        "args_in_restrictions": [
+          null,
+          null,
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_stp_with_inc",
+        "bases": [
+          "Stp_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "stp q0, q2, [x1, #32]",
+        "roundtrip_class": "q_stp_with_inc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]"
+        ],
+        "cortex_a520": [
+          "[[VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_inc'> for stp q0, q2, [x1, #32]"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str_with_inc_writeback",
+      "source": "str q0, [x1, #16]!",
+      "expected": {
+        "args_in": [
+          "v0"
+        ],
+        "args_out": [],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str_with_inc_writeback",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "str q0, [x1, #16]!",
+        "roundtrip_class": "q_str_with_inc_writeback",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_str_with_postinc",
+      "source": "str q0, [x1], #16",
+      "expected": {
+        "args_in": [
+          "v0"
+        ],
+        "args_out": [],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_str_with_postinc",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "str q0, [x1], #16",
+        "roundtrip_class": "q_str_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_st1_with_postinc",
+      "source": "st1 {v0.4s}, [x1], #16",
+      "expected": {
+        "args_in": [
+          "v0"
+        ],
+        "args_out": [],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": "4s",
+        "immediate": "16",
+        "index": null,
+        "addr": "x1",
+        "increment": "16",
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_st1_with_postinc",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "st1 {v0.4S}, [x1], #16",
+        "roundtrip_class": "q_st1_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_st1_lane_with_postinc",
+      "source": "st1 {v0.s}[2], [x1], #4",
+      "expected": {
+        "args_in": [
+          "v0"
+        ],
+        "args_out": [],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": "s",
+        "immediate": "4",
+        "index": 2,
+        "addr": "x1",
+        "increment": "4",
+        "pre_index": null,
+        "args_in_restrictions": [
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_st1_lane_with_postinc",
+        "bases": [
+          "Str_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "st1 {v0.S}[2], [x1], #4",
+        "roundtrip_class": "q_st1_lane_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "[[VEC0]]",
+          "1",
+          "4"
+        ],
+        "cortex_a520": [
+          "[[VEC0, VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "[STORE0, STORE1]",
+          "1",
+          "4"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "1",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "[LSU0, SU0]",
+          "1",
+          "4"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "[LSU0]",
+          "1",
+          "4"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    },
+    {
+      "definition": "q_stp_with_postinc",
+      "source": "stp q0, q2, [x1], #32",
+      "expected": {
+        "args_in": [
+          "v0",
+          "v2"
+        ],
+        "args_out": [],
+        "args_in_out": [
+          "x1"
+        ],
+        "datatype": null,
+        "immediate": "32",
+        "index": null,
+        "addr": "x1",
+        "increment": "32",
+        "pre_index": null,
+        "args_in_restrictions": [
+          null,
+          null
+        ],
+        "args_out_restrictions": [],
+        "args_in_out_restrictions": [
+          null
+        ],
+        "args_in_combinations": null,
+        "args_out_combinations": null,
+        "args_in_out_combinations": null,
+        "class": "q_stp_with_postinc",
+        "bases": [
+          "Stp_Q",
+          "AArch64Instruction",
+          "Instruction"
+        ],
+        "write": "stp q0, q2, [x1], #32",
+        "roundtrip_class": "q_stp_with_postinc",
+        "cortex_a55": [
+          "[[VEC0, VEC1]]",
+          "1",
+          "4"
+        ],
+        "cortex_a320": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32"
+        ],
+        "cortex_a520": [
+          "[[VECTOR_LD_ST]]",
+          "1",
+          "3"
+        ],
+        "cortex_a72_frontend": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32"
+        ],
+        "neoverse_n1_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "4"
+        ],
+        "aarch64_big_experimental": [
+          "[LSU0, LSU1]",
+          "2",
+          "2"
+        ],
+        "apple_m1_firestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32"
+        ],
+        "apple_m1_icestorm_experimental": [
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32",
+          "UnknownInstruction: Couldn't find <class 'slothy.targets.aarch64.aarch64_neon.q_stp_with_postinc'> for stp q0, q2, [x1], #32"
+        ],
+        "offset_adjustable": true,
+        "is_load_store": true
+      }
+    }
+  ]
+}

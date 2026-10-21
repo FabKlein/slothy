@@ -56,9 +56,17 @@ class InstructionSpecTests(unittest.TestCase):
     def test_all_migrated_neon_definitions_match_python_baseline(self):
         fixture = Path(__file__).with_name("data") / "aarch64_neon_before_json.json"
         cases = json.loads(fixture.read_text())["cases"]
+        second_batch = json.loads(
+            fixture.with_name("aarch64_neon_declarative_before_json.json").read_text()
+        )["cases"]
+        memory_batch = json.loads(
+            fixture.with_name("aarch64_neon_memory_before_json.json").read_text()
+        )["cases"]
         self.assertEqual(
             {s["name"] for s in arch._NEON_SPECS},
             {c["definition"] for c in cases}
+            | {c["definition"] for c in second_batch}
+            | {c["definition"] for c in memory_batch}
             | {"fmov_w_to_s", "sfadd_d"}
             | {"vqrdmulh_lane", "vqdmulh_lane", "vmul_lane", "vmla_lane", "vmls_lane"}
             | {

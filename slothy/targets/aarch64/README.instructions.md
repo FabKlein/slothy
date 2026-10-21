@@ -3,10 +3,15 @@
 Simple instruction definitions are generated from two JSON files:
 
 - `aarch64_scalar_instructions.json`: scalar instructions (173 definitions).
-- `aarch64_neon_instructions.json`: 91 definitions (89 migrated plus two new),
+- `aarch64_neon_instructions.json`: 145 definitions (143 migrated plus two new),
   including vector FADD/FMUL, arithmetic, logical, shuffle, shift forms,
   and 17 register-restricted integer by-element forms. The new definitions are
   `fmov_w_to_s` (`fmov Sd,Wn`) and `sfadd_d` (`fadd Dd,Da,Db`).
+  The second migration batch adds 28 existing declarations: TRN1/TRN2,
+  AES/PMULL and AES wrapper pseudo-instructions, comparisons, UADDLV,
+  GPR/vector transfers, and NOP. No instruction timings change in this migration.
+  A further 26 memory definitions use the existing address/writeback fields:
+  single/pair Q loads and stores, LD1/ST1, LD1R, stack, hint, and prefetch forms.
 
 Both use `instruction_loader.py`. The NEON classes are generated inside
 `aarch64_neon.py` before parser discovery and callback registration. Scalar
@@ -71,7 +76,7 @@ booleans are rejected. Class names must not overwrite existing Python names.
 | `required_features` | Explicit ISA requirements for this concrete instruction; omitted means unclassified, `[]` means baseline A64 |
 | `conditional_features` | Additional ISA requirements selected by datatype placeholders; see below |
 | `addr_source` | Address operand: `{"type": "inputs", "index": 0}`, `in_outs`, or `{"type": "literal", "value": "sp"}` |
-| `set_increment_from_immediate` | Model an immediate post-increment |
+| `set_increment_from_immediate` | Model immediate address writeback; the pattern retains pre-/post-index syntax |
 | `pre_index_from_immediate` | Model the immediate address offset |
 | `restore_immediate_from_pre_index` | Write the adjusted address offset back into assembly |
 
@@ -149,10 +154,22 @@ description. `<dt>`, `<index>`, and immediate placeholders retain the existing
 parser semantics; JSON does not yet add architectural arrangement/lane-range
 validation or consecutive-register groups.
 
-Instructions requiring custom `make`/`write` methods remain in Python, including
-FP by-element lane validation, other custom register relationships, and multi-register
-loads/stores and table lookups. Python parsing/fusion callbacks can still be
-attached to generated classes; `vins_d` keeps its existing parsing callback.
+The remaining concrete Python declarations have `make`/`write` methods, including
+FP by-element lane validation, forced-output variants, and multi-register
+relationships. LDUR retains signed-offset validation in both parsing and writing.
+Grouped LD1/LD2/ST1 forms retain their consecutive-register constraints and lane
+callbacks. Register-offset Q loads stay in Python pending an audit of their shift
+versus address-offset metadata. Two-table TBL keeps its group-register constraints.
+Family classes such as `Transpose`, `AESInstruction`, and `Fmov` remain in Python
+to preserve the inheritance relationships used by CPU models.
+
+Python parsing/fusion callbacks can still be attached to generated classes;
+`vins_d`, `fmov_0`, and `fmov_1` keep their existing parsing callbacks. The FMOV
+forced-output classes and their parsing guards remain handwritten, with explicit
+FP requirements so callback-rewritten graphs also pass ISA validation.
+Pseudo-instructions do not intrinsically require Python: `aesr` and the related
+AES wrappers are now declared in JSON, preserving their existing operand roles
+and grouping semantics. Their assembly macro definitions are unchanged.
 Keep nontrivial semantics in Python until the shared schema can express them
 and equivalent behavior is covered by tests.
 
@@ -160,6 +177,37 @@ Execution units, inverse throughput, latency, forwarding, and other scheduling
 constraints remain in CPU-specific models (`cortex_a520.py`, `cortex_a55.py`,
 etc.). Adding JSON syntax alone does **not** add timing support to every CPU.
 This migration does not change CPU timing tables or fill their coverage gaps.
+
+## Memory definitions and compatibility
+
+The memory migration preserves class names, operand roles, address metadata,
+writeback amounts, and existing offset rewriting. In particular:
+
+- Offset-only forms use an input base and `pre_index_from_immediate`; their
+  writers restore adjusted offsets with `restore_immediate_from_pre_index`.
+- Writeback forms use a read/write base and `set_increment_from_immediate`.
+  The assembly pattern distinguishes `[base, #imm]!` from `[base], #imm`.
+  Existing pre-index writeback metadata is retained (`increment` set,
+  `pre_index` unset); this is not a redesign of the address model.
+- LD1R post-increments by the element size (for example, `.4s` uses `#4`),
+  not by the full vector size. Q-pair loads/stores preserve both vector operands.
+- Stack forms retain a literal `sp` address. TODO: model their SP register
+  dependency explicitly; this limitation predates the migration.
+
+Compatibility does not imply architectural validity. The `ldrh`/`strh` hint
+forms are pseudo-instructions; the legacy `q_ld1_with_inc` immediate-offset
+syntax and `prefetch` hint spelling `pld1lkeep` are also retained unchanged.
+The architectural PRFM hint is `pldl1keep`; correcting the legacy parser form
+is separate from this behavior-preserving migration. PRFM still lacks the
+adjusted-offset writer used by the ordinary immediate-offset forms. Lane and
+immediate-range legality is not newly validated by moving a definition into JSON.
+
+The migrated memory forms explicitly require FP for SIMD/FP LDR/STR/LDP/STP,
+Advanced SIMD for LD1/ST1/LD1R, and no extension for PRFM. Regression snapshots
+compare parsing, writing, memory metadata, and model queries on all eight
+AArch64 targets. Additional tests cover offset fixups, assembly of architectural
+forms, pre-/post-index execution, and a software-pipelined pair-load/replicate/
+pair-store loop executed with Unicorn on disjoint buffers.
 
 ## ISA requirements and target capabilities
 
@@ -221,9 +269,9 @@ For example, FP MLA subclasses integer MLA for scheduling, and PMULL subclasses
 an AES family, but neither relationship establishes the ISA requirements.
 Missing requirements mean unclassified, even if the parent has metadata.
 
-This increment annotates all 91 JSON NEON definitions, scalar CRC32 forms,
-selected scalar arithmetic/FP forms, and handwritten AES/PMULL, FP-lane, TBL,
-NOP, and forced-output INS forms. Other scalar and handwritten instructions
+All 119 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
+forms, selected scalar arithmetic/FP forms, and handwritten FP-lane, TBL,
+forced-output FMOV, and forced-output INS forms. Other scalar and handwritten instructions
 remain unclassified. SQ(R)DMULH is baseline Advanced SIMD, not FEAT_RDM;
 RDM covers the later rounding multiply-accumulate/subtract forms, which are
 not currently defined here. DotProd and I8MM are registered for future use:
@@ -314,6 +362,15 @@ at the halfword/word register boundaries.
 `test_aarch64_isa.py` checks feature requirements and datatype conditions,
 configuration overrides, unknown-metadata policy, pre-scheduling rejection,
 fusion output validation, and strict straightline/software-pipelined scheduling.
+
+`test_aarch64_neon_declarative_migration.py` compares the second batch's 28
+definitions against observations from commit `995e8b4`, covering parser/writer
+behavior, operand metadata, inheritance, and all eight AArch64 CPU models
+(including pre-existing unsupported timing lookups). It also checks assembler
+acceptance of the real instructions, retained FMOV callbacks, and that plain
+declarations do not drift back into Python. AES pseudo-instructions are parser
+probes, not standalone architectural instructions, and are excluded from that
+assembler check.
 
 The later A320/A520 coverage update intentionally changes five migrated classes'
 A520 lookup results. Those results are tested in `test_armv9_models.py` instead

@@ -35,6 +35,21 @@ that SLOTHY is being used for.
 Adding new instructions is simple thanks to the generic AArch64Instruction
 class which generates instruction parsers and writers from instruction templates
 similar to those used in the Arm ARM.
+
+Simple NEON definitions live in aarch64_neon_instructions.json; the companion
+aarch64_neon_inst.md is a generated reference, not the source of truth.
+Handwritten definitions remain here when they need behavior not yet expressed
+by the JSON schema: signed-offset checks in q_ldur, FP lane validation,
+consecutive-register constraints in grouped loads/stores and two-table TBL,
+or parsing guards for forced-output variants. Register-offset Q loads also
+remain pending an audit of their shift versus address-offset metadata.
+Instruction-family classes stay here to preserve the inheritance used by CPU
+models. Parsing/fusion callbacks stay in Python but can attach to JSON-generated
+classes, so a callback alone does not prevent migration.
+
+Further migrations should first express the required semantics in the shared
+loader and add equivalent parser, writer, allocation, and scheduling tests.
+See README.instructions.md for schema details and known compatibility limits.
 """
 
 import logging
@@ -1382,11 +1397,6 @@ class restore(Instruction):
         return obj
 
 
-class nop(AArch64Instruction):
-    required_features = []
-    pattern = "nop"
-
-
 ############################
 #                          #
 # Some LSU instructions    #
@@ -1406,34 +1416,6 @@ class Ldp_Q(AArch64Instruction):
     pass
 
 
-class q_ldr(Ldr_Q):
-    pattern = "ldr <Qa>, [<Xc>]"
-    inputs = ["Xc"]
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = None
-        obj.addr = obj.args_in[0]
-        return obj
-
-
-class q_ld1(Ldr_Q):
-    pattern = "ld1 {<Va>.<dt>}, [<Xc>]"
-    inputs = ["Xc"]
-    outputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = None
-        obj.addr = obj.args_in[0]
-        return obj
-
-
 class q_ld1_2(AArch64Instruction):
     pattern = "ld1 {<Va>.<dt>, <Vb>.<dt>}, [<Xc>]"
     inputs = ["Xc"]
@@ -1449,55 +1431,6 @@ class q_ld1_2(AArch64Instruction):
             ([0, 1], [[f"v{i}", f"v{i+1}"] for i in range(0, 31)])
         ]
         return obj
-
-
-class prefetch(Ldr_Q):
-    pattern = "prfm pld1lkeep, [<Xc>, <imm>]"
-    inputs = ["Xc"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
-        return obj
-
-
-class q_ldr_with_imm_hint(Ldr_Q):
-    pattern = "ldrh <Qa>, <Xc>, <imm>, <Th>"
-    inputs = ["Xc", "Th"]
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class b_ldr_stack_with_inc(AArch64Instruction):
-    pattern = "ldr <Ba>, [sp, <imm>]"
-    # TODO: Model sp dependency
-    outputs = ["Ba"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = "sp"
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
 
 
 class q_ld2_lane_s(AArch64Instruction):
@@ -1563,70 +1496,6 @@ class q_ld2_lane_post_inc_force_output(Q_Ld2_Lane_Post_Inc):
         return super().write()
 
 
-class q_ldr1_stack(Ldr_Q):
-    pattern = "ld1r {<Va>.<dt>}, [sp]"
-    # TODO: Model sp dependency
-    outputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = None
-        obj.addr = "sp"
-        return obj
-
-
-class q_ldr1_post_inc(Ldr_Q):
-    pattern = "ld1r {<Va>.<dt>}, [<Xa>], <imm>"
-    outputs = ["Va"]
-    in_outs = ["Xa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_ldr_stack_with_inc(Ldr_Q):
-    pattern = "ldr <Qa>, [sp, <imm>]"
-    # TODO: Model sp dependency
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = "sp"
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_ldr_with_inc(Ldr_Q):
-    pattern = "ldr <Qa>, [<Xc>, <imm>]"
-    inputs = ["Xc"]
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
 class q_ldur(Ldr_Q):
     """128-bit vector load with a signed, unscaled byte offset."""
 
@@ -1670,273 +1539,12 @@ class q_ldr_with_imm_shifted(Ldr_Q):
         return super().write()
 
 
-class q_ld1_with_inc(Ldr_Q):
-    pattern = "ld1 {<Va>.<dt>}, [<Xc>, <imm>]"
-    inputs = ["Xc"]
-    outputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_ldp_with_inc(Ldp_Q):
-    pattern = "ldp <Qa>, <Qb>, [<Xc>, <imm>]"
-    inputs = ["Xc"]
-    outputs = ["Qa", "Qb"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_ldr_with_inc_writeback(Ldr_Q):
-    pattern = "ldr <Qa>, [<Xc>, <imm>]!"
-    in_outs = ["Xc"]
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_ldr_with_postinc(Ldr_Q):
-    pattern = "ldr <Qa>, [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    outputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_ld1_with_postinc(Ldr_Q):
-    pattern = "ld1 {<Va>.<dt>}, [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    outputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_ldp_with_postinc(Ldp_Q):
-    pattern = "ldp <Qa>, <Qb>, [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    outputs = ["Qa", "Qb"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
 class Str_Q(AArch64Instruction):
     pass
 
 
 class Stp_Q(AArch64Instruction):
     pass
-
-
-class q_str(Str_Q):
-    pattern = "str <Qa>, [<Xc>]"
-    inputs = ["Qa", "Xc"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = None
-        obj.addr = obj.args_in[1]
-        return obj
-
-
-class q_str_with_imm_hint(Str_Q):
-    pattern = "strh <Qa>, <Xc>, <imm>, <Th>"
-    inputs = ["Qa", "Xc"]
-    outputs = ["Th"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[1]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_str_with_inc(Str_Q):
-    pattern = "str <Qa>, [<Xc>, <imm>]"
-    inputs = ["Qa", "Xc"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[1]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_str_stack_with_inc(Str_Q):
-    pattern = "str <Qa>, [sp, <imm>]"
-    inputs = ["Qa"]  # TODO: Model sp dependency
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = "sp"
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_stp_stack_with_inc(AArch64Instruction):
-    pattern = "stp <Qa>, <Qb>, [sp, <imm>]"
-    inputs = ["Qa", "Qb"]  # TODO: Model sp dependency
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = "sp"
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_stp_with_inc(Stp_Q):
-    pattern = "stp <Qa>, <Qb>, [<Xc>, <imm>]"
-    inputs = ["Qa", "Qb", "Xc"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[2]
-        return obj
-
-    def write(self):
-        self.immediate = simplify(self.pre_index)
-        return super().write()
-
-
-class q_str_with_inc_writeback(Str_Q):
-    pattern = "str <Qa>, [<Xc>, <imm>]!"
-    in_outs = ["Xc"]
-    inputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_str_with_postinc(Str_Q):
-    pattern = "str <Qa>, [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    inputs = ["Qa"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_st1_with_postinc(Str_Q):
-    pattern = "st1 {<Va>.<dt>}, [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    inputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_st1_lane_with_postinc(Str_Q):
-    pattern = "st1 {<Va>.<dt>}[<index>], [<Xc>], <imm>"
-    in_outs = ["Xc"]
-    inputs = ["Va"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
-
-
-class q_stp_with_postinc(Stp_Q):
-    pattern = "stp <Qa>, <Qb>, [<Xc>], <imm>"
-    inputs = ["Qa", "Qb"]
-    in_outs = ["Xc"]
-
-    @classmethod
-    def make(cls, src):
-        obj = AArch64Instruction.build(cls, src)
-        obj.increment = obj.immediate
-        obj.pre_index = None
-        obj.addr = obj.args_in_out[0]
-        return obj
 
 
 class q_st1_2_with_postinc(Stp_Q):
@@ -2219,41 +1827,12 @@ class VecToGprMov(AArch64Instruction):
     pass
 
 
-class umov_d(VecToGprMov):
-    pattern = "umov <Xd>, <Va>.d[<index>]"
-    inputs = ["Va"]
-    outputs = ["Xd"]
-
-
-class mov_d(VecToGprMov):
-    pattern = "mov <Xd>, <Va>.d[<index>]"
-    inputs = ["Va"]
-    outputs = ["Xd"]
-
-
 class Fmov(AArch64Instruction):
     pass
 
 
-class fmov_s_form(Fmov):
-    pattern = "fmov <Wd>, <Sa>"
-    inputs = ["Sa"]
-    outputs = ["Wd"]
-
-
-class fmov_d_form(Fmov):
-    pattern = "fmov <Xd>, <Da>"
-    inputs = ["Da"]
-    outputs = ["Xd"]
-
-
-class fmov_0(Fmov):
-    pattern = "fmov <Dd>, <Xa>"
-    inputs = ["Xa"]
-    in_outs = ["Dd"]
-
-
 class fmov_0_force_output(Fmov):
+    required_features = ["FEAT_FP"]
     pattern = "fmov <Dd>, <Xa>"
     inputs = ["Xa"]
     outputs = ["Dd"]
@@ -2265,13 +1844,8 @@ class fmov_0_force_output(Fmov):
         return AArch64Instruction.build(cls, src)
 
 
-class fmov_1(Fmov):
-    pattern = "fmov <Vd>.d[1], <Xa>"
-    inputs = ["Xa"]
-    in_outs = ["Vd"]
-
-
 class fmov_1_force_output(Fmov):
+    required_features = ["FEAT_FP"]
     pattern = "fmov <Vd>.d[1], <Xa>"
     inputs = ["Xa"]
     outputs = ["Vd"]
@@ -2287,99 +1861,10 @@ class Transpose(AArch64Instruction):
     pass
 
 
-class trn1(Transpose):
-    pattern = "trn1 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class trn2(Transpose):
-    pattern = "trn2 <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
 # Wrapper around AESE+AESMC, treated as one instructions in SLOTHY
 # so as to prevent pulling them apart and hindering instruction fusion.
 class AESInstruction(AArch64Instruction):
     pass
-
-
-class aesr(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesr <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd"]
-
-
-class aesr_x2(AArch64Instruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesr_x2 <Vd0>.16b, <Vd1>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd0", "Vd1"]
-
-
-class aesr_x4(AArch64Instruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesr_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd0", "Vd1", "Vd2", "Vd3"]
-
-
-class aese_x4(AArch64Instruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aese_x4 <Vd0>.16b, <Vd1>.16b, <Vd2>.16b, <Vd3>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd0", "Vd1", "Vd2", "Vd3"]
-
-
-class aesdr(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesdr <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd"]
-
-
-class aese(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aese <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd"]
-
-
-class aesmc(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesmc <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    outputs = ["Vd"]
-
-
-class aesd(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesd <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    in_outs = ["Vd"]
-
-
-class aesimc(AESInstruction):
-    required_features = ["FEAT_AES"]
-    pattern = "aesimc <Vd>.16b, <Va>.16b"
-    inputs = ["Va"]
-    outputs = ["Vd"]
-
-
-class pmull1_q(AESInstruction):
-    required_features = ["FEAT_PMULL"]
-    pattern = "pmull <Vd>.1q, <Va>.1d, <Vb>.1d"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class pmull2_q(AESInstruction):
-    required_features = ["FEAT_PMULL"]
-    pattern = "pmull2 <Vd>.1q, <Va>.2d, <Vb>.2d"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
 
 
 class Str_X(AArch64Instruction):
@@ -3020,54 +2505,6 @@ class ASimdCompare(AArch64Instruction):
     """Parent class for ASIMD compare instructions"""
 
 
-class cmge(ASimdCompare):
-    pattern = "cmge <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class cmhi(ASimdCompare):
-    pattern = "cmhi <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class cmeq(ASimdCompare):
-    pattern = "cmeq <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class cmgt(ASimdCompare):
-    pattern = "cmgt <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class cmhs(ASimdCompare):
-    pattern = "cmhs <Vd>.<dt>, <Va>.<dt>, <Vb>.<dt>"
-    inputs = ["Va", "Vb"]
-    outputs = ["Vd"]
-
-
-class cmle(ASimdCompare):
-    pattern = "cmle <Vd>.<dt>, <Va>.<dt>, <imm>"
-    inputs = ["Va"]
-    outputs = ["Vd"]
-
-
-class cmlt(ASimdCompare):
-    pattern = "cmlt <Vd>.<dt>, <Va>.<dt>, <imm>"
-    inputs = ["Va"]
-    outputs = ["Vd"]
-
-
-class vuaddlv_sform(AArch64Instruction):
-    pattern = "uaddlv <Sd>, <Va>.<dt>"
-    inputs = ["Va"]
-    outputs = ["Sd"]
-
-
 # Simple NEON definitions share the scalar specification loader. Load before
 # attaching parsing/fusion callbacks and discovering instruction classes.
 _NEON_SPECS = _read_instruction_specs(
@@ -3077,6 +2514,8 @@ _generate_instruction_classes(_NEON_SPECS, globals(), AArch64Instruction)
 
 # These classes are installed in this module by the JSON loader above.
 vmulf = globals()["vmulf"]
+fmov_0 = globals()["fmov_0"]
+fmov_1 = globals()["fmov_1"]
 vins_d = globals()["vins_d"]
 veor = globals()["veor"]
 veor3 = globals()["veor3"]
