@@ -82,6 +82,17 @@ class InstructionSpecTests(unittest.TestCase):
                 # Normalize tuple/list representations in JSON observations.
                 actual = json.loads(json.dumps(observe(case["source"])))
                 expected = dict(case["expected"])
+                if case["definition"] in {
+                    "vand",
+                    "vbic",
+                    "vbic_imm_shifted",
+                    "veor",
+                    "vorr",
+                }:
+                    # Deliberate A520 128-bit logical-family refinement. These
+                    # historical parser probes do not all use legal assembler
+                    # spellings; keep parser and other-target observations.
+                    expected["cortex_a520"] = ["[VEC0, VEC1]", "1", "3"]
                 if case["definition"] in {"vmla", "vmls"}:
                     # Only the accumulator-chain latency deliberately changes;
                     # retain the old unit/occupancy and parser comparisons.

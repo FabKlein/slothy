@@ -53,7 +53,6 @@ from slothy.targets.aarch64.armv9_timing import (
     FMOV_GPR_TO_VEC,
     fmov_dependency_latency,
     forwarding_latency,
-    is_and_eor_16b,
     is_dual_issue_gpr_insert,
     is_other_neon_logical,
 )
@@ -102,6 +101,8 @@ from slothy.targets.aarch64.aarch64_neon import (
     Ldr_D,
     Str_Q,
     Stp_Q,
+    q_st1_with_postinc,
+    q_str_with_postinc,
     vmov,
     vadd,
     vaddf,
@@ -126,6 +127,9 @@ from slothy.targets.aarch64.aarch64_neon import (
     vqdmulh_vector,
     vbic,
     vbic_imm_shifted,
+    vand,
+    veor,
+    vorr,
     Vmull,
     Vmlal,
     vushr,
@@ -381,6 +385,53 @@ def _single_issue_transfer(inst):
     )
 
 
+def _is_other_neon_logical(inst):
+    return is_other_neon_logical(inst) and not _is_dual_issue_logical_128bit(inst)
+
+
+def _is_dual_issue_logical_128bit(inst):
+    return (
+        type(inst)
+        in (
+            vand,
+            vbic,
+            vbic_imm_shifted,
+            veor,
+            vorr,
+        )
+        and inst.is_q_form_vector_instruction()
+    )
+
+
+def _is_integer_alu_store_producer(inst):
+    if _is_dual_issue_logical_128bit(inst):
+        return True
+    # Exact types exclude FP subclasses and lane/widening/accumulating forms.
+    return type(inst) in (vadd, vsub) and inst.is_q_form_vector_instruction()
+
+
+def _integer_alu_store_data_latency(src, out_idx, dst):
+    """Approximate the checked integer-ALU-to-post-indexed-Q-store data path.
+
+    Keep the arithmetic result latency separate from store-data availability.
+    Four cycles is a scheduling approximation, not a universal forwarding
+    latency or a model of vector queue occupancy. Select explicit producer
+    forms, not every instruction with latency three. Do not extend it to other
+    producers or lane, paired, or narrower stores without separate checks.
+    """
+    if not _is_integer_alu_store_producer(src) or out_idx != 0:
+        return None
+    if type(dst) not in (q_st1_with_postinc, q_str_with_postinc):
+        return None
+    if not dst.is_q_form_vector_instruction():
+        return None
+    # Handle pure outputs and read/write destinations uniformly.
+    result_reg = (src.args_out or src.args_in_out)[0]
+    if result_reg != dst.args_in[0]:
+        return None
+    return 4
+
+
 execution_units = {
     vfcmla: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     mul_xform: ExecutionUnit.SCALAR_MUL(),
@@ -391,7 +442,8 @@ execution_units = {
     # Keep one/cycle for FMOV to GPRs and uncharacterized insertion forms.
     _single_issue_transfer: [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
     is_dual_issue_gpr_insert: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
-    is_and_eor_16b: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    # Alternatives, not simultaneous occupancy of both vector pipes (2x128-bit).
+    _is_dual_issue_logical_128bit: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     (vushl_reg, mov_vtov_d, vtbl_2): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     Ldp_W: [ExecutionUnit.SCALAR_LOAD, ExecutionUnit.SCALAR_STORE],
     Stp_W: ExecutionUnit.SCALAR_STORE,
@@ -419,7 +471,7 @@ execution_units = {
         vxtn,
         vtbl,
         VShiftImmediateRounding,
-        is_other_neon_logical,
+        _is_other_neon_logical,
         vuaddlv_sform,
     ): [[ExecutionUnit.VEC0, ExecutionUnit.VEC1]],
     (Str_Q,): [[ExecutionUnit.VEC0, ExecutionUnit.VECTOR_LD_ST]],
@@ -788,8 +840,8 @@ default_latencies = {
     VShiftImmediateBasic: 2,
     AArch64NeonShiftInsert: 2,
     (vusra): 3,
-    is_and_eor_16b: 3,
-    is_other_neon_logical: 1,
+    _is_dual_issue_logical_128bit: 3,
+    _is_other_neon_logical: 1,
     vext: 2,
     (vuzp1, vuzp2): 2,
     (Q_Ld2_Lane_Post_Inc, q_ld2_lane_s): 4,
@@ -819,6 +871,10 @@ def get_latency(src, out_idx, dst):
     if transfer_latency is not None:
         return transfer_latency
 
+    store_data_latency = _integer_alu_store_data_latency(src, out_idx, dst)
+    if store_data_latency is not None:
+        return store_data_latency
+
     bypass = forwarding_latency(src, dst)
     if bypass is not None:
         return bypass
@@ -826,6 +882,9 @@ def get_latency(src, out_idx, dst):
     if instclass_dst in [trn1, trn2, vzip1, vzip2, vuzp1, vuzp2, fcsel] and latency < 3:
         latency += 1
 
+    # Legacy dependency-specific exceptions, separate from the checked ALU/store
+    # rules above. The BIC-to-USRA penalty is retained for compatibility; its
+    # timing has not been revalidated with the arithmetic/store refinements.
     if [instclass_src, instclass_dst] in [
         [lsr_imm, mul_wform],
         [lsr_imm, umaddl_wform],

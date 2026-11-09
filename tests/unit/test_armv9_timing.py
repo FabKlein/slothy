@@ -74,8 +74,9 @@ class Armv9TimingTests(unittest.TestCase):
                 ("eor", "16b", 3),
                 ("and", "8b", 1),
                 ("eor", "8b", 1),
-                ("orr", "16b", 1),
-                ("bic", "16b", 1),
+                ("orr", "16b", 3 if target is cortex_a520 else 1),
+                ("orr", "8b", 1),
+                ("bic", "16b", 3 if target is cortex_a520 else 1),
             ):
                 inst = parse(f"{op} v0.{width}, v1.{width}, v2.{width}")
                 with self.subTest(target=target.__name__, instruction=inst.write()):
@@ -90,6 +91,79 @@ class Armv9TimingTests(unittest.TestCase):
                     if target is cortex_a520:
                         both = [target.ExecutionUnit.VEC0, target.ExecutionUnit.VEC1]
                         self.assertEqual(units, both if expected == 3 else [both])
+
+    def test_a520_bic_forms_and_lookup_disjointness(self):
+        both = [cortex_a520.ExecutionUnit.VEC0, cortex_a520.ExecutionUnit.VEC1]
+        for text, specialized in (
+            ("bic v0.4s, #0x80, lsl #24", True),
+            ("bic v0.4S, #0x80, LSL #24", True),
+            ("bic v0.4s, #1, lsl #0", True),
+            ("bic v0.2s, #0x80, lsl #24", False),
+            ("bic v0.8h, #0x80, lsl #8", True),
+            ("bic v0.8H, #1, LSL #0", True),
+            ("bic v0.16b, v1.16b, v2.16b", True),
+            ("bic v0.16B, v1.16B, v2.16B", True),
+            ("bic v0.4h, #0x80, lsl #8", False),
+            ("bic v0.8b, v1.8b, v2.8b", False),
+            ("orr v0.4s, #0x80", False),
+        ):
+            inst = parse(text)
+            with self.subTest(instruction=text):
+                expected = 3 if specialized else 1
+                self.assertEqual(cortex_a520.get_latency(inst, 0, inst), expected)
+                self.assertEqual(
+                    lookup_multidict(cortex_a520.default_latencies, inst, type(inst)),
+                    expected,
+                )
+                self.assertEqual(cortex_a520.get_inverse_throughput(inst), 1)
+                self.assertEqual(
+                    cortex_a520.get_units(inst), both if specialized else [both]
+                )
+                # This change must not silently retime the A320 model.
+                self.assertEqual(cortex_a320.get_latency(inst, 0, inst), 1)
+                self.assertEqual(cortex_a320.get_inverse_throughput(inst), 1)
+
+    def test_a520_bic_and_orr_scheduling(self):
+        for template in (
+            "bic v{i}.4s, #0x80, lsl #24",
+            "bic v{i}.8h, #0x80, lsl #8",
+            "bic v{i}.16b, v{i}.16b, v31.16b",
+            "orr v{i}.16b, v{i}.16b, v31.16b",
+        ):
+            for rename in (False, True):
+                with self.subTest(template=template, rename=rename):
+                    result = self.optimize(
+                        cortex_a520,
+                        [template.format(i=i) for i in range(8)],
+                        rename=rename,
+                    )
+                    cycles = sorted(result.cycle_position_with_bubbles.values())
+                    self.assertEqual(
+                        [c - cycles[0] for c in cycles], [0, 0, 1, 1, 2, 2, 3, 3]
+                    )
+                    result = self.optimize(
+                        cortex_a520, [template.format(i=0)] * 4, rename=rename
+                    )
+                    cycles = result.cycle_position_with_bubbles
+                    self.assertEqual(
+                        [cycles[i + 1] - cycles[i] for i in range(3)], [3] * 3
+                    )
+            result = self.optimize(
+                cortex_a520, [template.format(i=0)], rename=True, pipeline=True
+            )
+            self.assertEqual(result.cycles, 3)
+
+    def test_a520_legacy_bic_usra_exception_is_unchanged(self):
+        # This preserves an older model assumption, not a new timing measurement.
+        for text in (
+            "bic v0.4s, #0x80, lsl #24",
+            "bic v0.8h, #0x80, lsl #8",
+            "bic v0.16b, v1.16b, v2.16b",
+        ):
+            with self.subTest(instruction=text):
+                src = parse(text)
+                dst = parse("usra v3.4s, v0.4s, #1")
+                self.assertEqual(cortex_a520.get_latency(src, 0, dst), 4)
 
     def test_a320_fp32_support_is_scoped(self):
         for op in ("fadd", "fmul"):

@@ -118,6 +118,40 @@ first-table dependency keeps the general latency. Checks used in-range indices
 Using these isolated-stream results for mixed-stream scheduling remains a model
 assumption, not a measured resource-contention guarantee.
 
+For A520, 128-bit BIC and register ORR now use either vector pipe, with
+one-cycle occupancy and three-cycle dependent-result latency. Independent
+instructions can therefore issue two per cycle on the assumed 2x128-bit
+datapath. BIC checks covered its immediate and register forms. Register ORR no
+longer uses the legacy one-cycle-latency, one-instruction-per-cycle fallback.
+This agrees with the logical-family timings in the A520 guide, section 3.16
+(page 31), which does not separately list the immediate encoding. A320 and
+narrower vector forms are unchanged. The older additional BIC-to-USRA consumer
+penalty is retained for compatibility, but has not been revalidated by these
+arithmetic and store checks. The 128-bit AND/EOR and ADD/SUB arithmetic entries already
+use three-cycle latency and dual issue and are not retimed. All these forms
+share the architecture's existing 128-bit vector classifier; immediate BIC
+does not have a separate arithmetic or store-data timing rule.
+
+For the checked A520 128-bit integer ALU producers, a dependent post-indexed
+full-vector ST1 or STR Q uses a **four-cycle store-data scheduling gap**,
+instead of the ordinary three-cycle arithmetic-result latency. This is an
+explicit lightweight approximation of store-data availability, not a measured
+universal forwarding latency, store completion time, or full vector-queue
+model. The selected producers are 128-bit vector
+BIC, AND, EOR, ORR, ADD and SUB. Checks found the same dependent-pair behavior
+across this group. The store must read the producer's result vector,
+irrespective of its full-width arrangement; independent stores and address
+dependencies retain ordinary timing.
+
+The rule selects explicit instruction types and 128-bit vector forms, not
+arbitrary instructions with the same latency or throughput. MUL, FP arithmetic,
+loads, transfers, lane/pair/narrower stores, narrower ALU forms, and other CPUs are
+unchanged. Arithmetic dependencies remain three cycles, with one-cycle
+occupancy on either vector pipe. No general ST1/LDP spacing penalty or
+universal latency-plus-one rule is added. Existing vector-memory hazard rules
+are retained pending a separate audit; this
+refinement does not establish their accuracy.
+
 For GPR/vector transfers, independent-stream rates are:
 
 | Form | A320 instructions/cycle | A520 instructions/cycle |
@@ -181,12 +215,15 @@ force-output callback variant; high-lane FMOV support is not added by this updat
   half-precision forms, W/S independent throughput checks, and UMOV paths.
 - Mixed MLA/MLS chains, integer lane/widening accumulates, and other vector
   widths; the accumulator bypass is currently limited to `.4s` same-opcode pairs.
-- Other logical opcodes and 64-bit arrangements; other DUP arrangements and
+- Remaining logical opcodes and 64-bit arrangements; other DUP arrangements and
   insertion lane indices.
 - TBL with other table sizes, mixed-width chains, other producers/consumers,
   and different or out-of-range index values.
 - Mixed-stream execution-resource contention, load/store contention and
   base-update dependencies; homogeneous throughput does not determine these.
+- More producer-to-store-data paths (including MUL and other ALU families)
+  and mixed-loop checks; the four-cycle integer-ALU-to-store gap is a scheduling
+  approximation, with queue blocking unmodeled.
 - A520 2x64 datapath characterization before adding a separate configuration.
 
 ## Validation
