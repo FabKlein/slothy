@@ -50,6 +50,34 @@ vector operands. Two-table TBL accepts both 8B and 16B results with 16B tables.
 
 ## Timing and resource caveats
 
+A520 covers register/immediate W-register CMP and immediate X-register LSL
+with one-cycle latency and one-cycle occupancy on either scalar ALU. These
+use the basic SUBS alias in section 3.3 (page 13) and the immediate LSL/UBFM
+alias qualification in section 3.6 (pages 17-18), respectively; both allow two
+independent instructions per cycle. Existing X-register CMP entries are not
+retimed by this addition.
+
+X-form MADD uses the MAC resource with four-cycle result latency and two-cycle
+occupancy (one instruction every two cycles), from section 3.4, page 15.
+Same-form MADD chains whose result feeds only the next addend use the guide's
+accumulator forwarding path with a two-cycle gap. A simultaneous multiplicand
+dependency keeps four cycles. Mixed MAC forms and unlisted consumers retain
+the general latency; issue-queue/register-read limits remain approximations.
+
+Register-indexed D loads retain the existing Ldr_D resources, occupancy 1 and
+load-to-use latency 3. Both address registers are true dependencies, but these
+are inherited model values, not new indexed-address timing measurements.
+
+A520 additionally supports FP32 FSUB (`.2s` and `.4s`) using the four-cycle
+latency in SWOG section 3.17, page 34, and either vector execution resource
+with one-cycle occupancy (two independent instructions/cycle on 2x128).
+Register-offset Q loads/stores and register-post-index D-lane ST1 use the
+existing Ldr_Q/Str_Q family resources and timings. In particular, the retained
+three-cycle store base-dependency latency is a conservative model convention,
+not a new measurement of register writeback or store completion. Dynamic
+address dependencies are preserved; these additions do not calibrate address
+generation, mixed-stream contention, or new producer-to-store forwarding paths.
+
 The A520 target continues to assume **2x128-bit vector datapaths**, as confirmed
 for the user's target. There is no selectable 2x64-bit configuration yet; do not
 use these estimates for that configuration. Adding it requires auditing existing

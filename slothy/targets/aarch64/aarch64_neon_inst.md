@@ -20,6 +20,7 @@ This is not a complete ISA or CPU timing reference. See
 | sfadd_d |  | AArch64Instruction |  |  | ["Da","Db"] |  | ["Dd"] | fadd &lt;Dd&gt;, &lt;Da&gt;, &lt;Db&gt; |  |  | ["FEAT_FP"] |  |  |
 | vadd |  | AArch64Instruction |  |  | ["Vb","Vc"] |  | ["Va"] | add &lt;Va&gt;.&lt;dt&gt;, &lt;Vb&gt;.&lt;dt&gt;, &lt;Vc&gt;.&lt;dt&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |
 | vaddf |  | AArch64Instruction | [{"when":{"dt":["4h","8h"]},"requires":["FEAT_FP16"]}] |  | ["Vb","Vc"] |  | ["Va"] | fadd &lt;Va&gt;.&lt;dt&gt;, &lt;Vb&gt;.&lt;dt&gt;, &lt;Vc&gt;.&lt;dt&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |
+| vsubf |  | AArch64Instruction |  |  | ["Vb","Vc"] | {"dt":["2s","4s"]} | ["Va"] | fsub &lt;Va&gt;.&lt;dt&gt;, &lt;Vb&gt;.&lt;dt&gt;, &lt;Vc&gt;.&lt;dt&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |
 | vsub |  | AArch64Instruction |  |  | ["Vb","Vc"] |  | ["Va"] | sub &lt;Va&gt;.&lt;dt&gt;, &lt;Vb&gt;.&lt;dt&gt;, &lt;Vc&gt;.&lt;dt&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |
 | vmov |  | AArch64Instruction |  |  | ["Va"] |  | ["Vd"] | mov &lt;Vd&gt;.&lt;dt0&gt;, &lt;Va&gt;.&lt;dt1&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |
 | vmovi |  | AArch64Instruction |  |  |  |  | ["Vd"] | movi &lt;Vd&gt;.&lt;dt&gt;, &lt;imm&gt; |  |  | ["FEAT_AdvSIMD"] |  |  |

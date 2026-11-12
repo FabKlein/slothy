@@ -294,6 +294,12 @@
       ]
     },
     {
+      "name": "vsubf",
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "fsub",
+      "operand_values": {"dt": ["2s", "4s"]}
+    },
+    {
       "name": "vsub",
       "template": "neon_arithmetic_binary",
       "mnemonic": "sub"

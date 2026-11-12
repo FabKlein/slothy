@@ -61,6 +61,10 @@ from slothy.targets.aarch64.aarch64_neon import (
     add_w_imm,
     adds,
     mul_xform,
+    madd_xform,
+    lsl,
+    cmp_wform,
+    cmp_imm_wform,
     sfadd_d,
     Ldp_W,
     Stp_W,
@@ -106,6 +110,7 @@ from slothy.targets.aarch64.aarch64_neon import (
     vmov,
     vadd,
     vaddf,
+    vsubf,
     vxtn,
     vshrn,
     vusra,
@@ -349,6 +354,9 @@ def get_min_max_objective(slothy):
 # See README.armv9-models.md for sources, resource approximations and caveats.
 _SCALAR_ADDITIONS = (
     add_w_imm,
+    lsl,
+    cmp_wform,
+    cmp_imm_wform,
     adds,
     csel,
     csel_xzr_ne,
@@ -422,7 +430,7 @@ def _integer_alu_store_data_latency(src, out_idx, dst):
 
 execution_units = {
     vfcmla: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
-    mul_xform: ExecutionUnit.SCALAR_MUL(),
+    (mul_xform, madd_xform): ExecutionUnit.SCALAR_MUL(),
     sfadd_d: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     FMOV_GPR_TO_VEC: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     _SCALAR_ADDITIONS: ExecutionUnit.SCALAR(),
@@ -565,6 +573,7 @@ execution_units = {
     is_dform_form_of(vadd): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vaddf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vaddf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    vsubf: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vshl): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_dform_form_of(vshl): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     is_qform_form_of(vshrn): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
@@ -648,7 +657,7 @@ execution_units = {
 
 inverse_throughput = {
     vfcmla: 1,
-    mul_xform: 2,
+    (mul_xform, madd_xform): 2,
     sfadd_d: 1,
     (_SCALAR_ADDITIONS + _CRC + _TRANSFERS + (vushl_reg, mov_vtov_d, Ldp_W, Stp_W)): 1,
     is_qform_form_of(q_st1_4_with_postinc): 4,
@@ -660,6 +669,7 @@ inverse_throughput = {
     (
         vadd,
         vaddf,
+        vsubf,
         vsub,
         vmov,
         vmul,
@@ -743,7 +753,7 @@ inverse_throughput = {
 
 default_latencies = {
     vfcmla: 4,
-    (mul_xform, sfadd_d): 4,
+    (mul_xform, madd_xform, sfadd_d): 4,
     _SCALAR_ADDITIONS: 1,
     _CRC: 2,
     _TRANSFERS: 3,
@@ -756,7 +766,7 @@ default_latencies = {
     q_ld1_2: 3,
     (vmulf_lane, vfmla_lane): 4,
     vmov: 2,
-    (vaddf, vmulf): 4,
+    (vaddf, vsubf, vmulf): 4,
     is_qform_form_of([vadd, vsub]): 3,
     is_dform_form_of([vadd, vsub]): 2,
     (trn1, trn2, ASimdCompare): 2,
@@ -854,6 +864,17 @@ def get_latency(src, out_idx, dst):
     instclass_dst = find_class(dst)
 
     latency = lookup_multidict(default_latencies, src, instclass_src)
+
+    # SWOG 3.4: X-form MAC results can forward to the next accumulator at
+    # the two-cycle issue interval. A multiplicand dependency still needs 4.
+    if (
+        instclass_src is madd_xform
+        and instclass_dst is madd_xform
+        and out_idx == 0
+        and src.args_out[0] == dst.args_in[2]
+        and src.args_out[0] not in dst.args_in[:2]
+    ):
+        return 2
 
     transfer_latency = fmov_dependency_latency(src, out_idx, dst, add_to_fmov=5)
     if transfer_latency is not None:

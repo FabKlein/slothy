@@ -96,8 +96,16 @@ class DeclarativeMigrationTests(unittest.TestCase):
                 for item in node.body
             )
             has_methods = any(isinstance(item, ast.FunctionDef) for item in node.body)
+            # This mixin supplies custom shift validation and address metadata;
+            # its concrete declarations are not expressible by the JSON loader.
+            has_address_mixin = any(
+                isinstance(base, ast.Name) and base.id == "_VectorRegisterOffset"
+                for base in node.bases
+            )
             if has_pattern:
-                self.assertTrue(has_methods, f"{node.name} belongs in JSON")
+                self.assertTrue(
+                    has_methods or has_address_mixin, f"{node.name} belongs in JSON"
+                )
 
     def test_all_migrated_forms_have_explicit_isa_metadata(self):
         for case in fixture()["cases"]:

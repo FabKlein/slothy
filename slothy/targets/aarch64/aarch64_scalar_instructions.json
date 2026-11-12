@@ -1335,6 +1335,7 @@
         "Xa"
       ],
       "name": "lsl",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
@@ -1927,15 +1928,16 @@
     {
       "base": "AArch64Multiply",
       "inputs": [
-        "Xacc",
         "Xa",
-        "Xb"
+        "Xb",
+        "Xacc"
       ],
       "name": "madd_xform",
+      "required_features": [],
       "outputs": [
         "Xd"
       ],
-      "pattern": "madd <Xd>, <Xacc>, <Xa>, <Xb>"
+      "pattern": "madd <Xd>, <Xa>, <Xb>, <Xacc>"
     },
     {
       "base": "AArch64Multiply",
@@ -2010,6 +2012,22 @@
       "modifiesFlags": "True",
       "name": "cmp",
       "pattern": "cmp <Xa>, <Xb>"
+    },
+    {
+      "base": "Tst",
+      "name": "cmp_wform",
+      "pattern": "cmp <Wa>, <Wb>",
+      "inputs": ["Wa", "Wb"],
+      "modifiesFlags": true,
+      "required_features": []
+    },
+    {
+      "base": "Tst",
+      "name": "cmp_imm_wform",
+      "pattern": "cmp <Wa>, <imm>",
+      "inputs": ["Wa"],
+      "modifiesFlags": true,
+      "required_features": []
     },
     {
       "base": "Tst",

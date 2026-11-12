@@ -237,7 +237,8 @@ class InstructionTemplateTests(unittest.TestCase):
         expected = json.loads(fixture.read_text())["instructions"]
         names = {entry["name"] for entry in expected}
         self.assertEqual(
-            {e["name"] for e in document["instructions"] if "template" in e}, names
+            {e["name"] for e in document["instructions"] if "template" in e},
+            names | {"vsubf"},
         )
         actual = [e for e in arch._NEON_SPECS if e["name"] in names]
         self.assertEqual(actual, expected)

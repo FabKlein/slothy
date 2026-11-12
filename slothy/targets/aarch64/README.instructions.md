@@ -2,12 +2,12 @@
 
 Simple instruction definitions are generated from two JSON files:
 
-- `aarch64_scalar_instructions.json`: scalar instructions (173 definitions).
-- `aarch64_neon_instructions.json`: 146 definitions (143 migrated plus three new),
-  including vector FADD/FMUL, arithmetic, logical, shuffle, shift forms,
-  and 17 register-restricted integer by-element forms. The new definitions are
+- `aarch64_scalar_instructions.json`: scalar instructions (175 definitions).
+- `aarch64_neon_instructions.json`: 147 definitions (143 migrated plus four new),
+  including vector FADD/FMUL, FP32 FSUB, arithmetic, logical, shuffle, shift forms,
+  and 17 register-restricted integer by-element forms. The added definitions are
   `fmov_w_to_s` (`fmov Sd,Wn`), `sfadd_d` (`fadd Dd,Da,Db`), and `vfcmla`
-  (FP16/FP32 vector FCMLA).
+  (FP16/FP32 vector FCMLA), plus `vsubf` (FP32 vector FSUB).
   The second migration batch adds 28 existing declarations: TRN1/TRN2,
   AES/PMULL and AES wrapper pseudo-instructions, comparisons, UADDLV,
   GPR/vector transfers, and NOP. No instruction timings change in this migration.
@@ -274,8 +274,10 @@ The remaining concrete Python declarations have `make`/`write` methods, includin
 FP by-element lane validation, forced-output variants, and multi-register
 relationships. LDUR retains signed-offset validation in both parsing and writing.
 Grouped LD1/LD2/ST1 forms retain their consecutive-register constraints and lane
-callbacks. Register-offset Q loads stay in Python pending an audit of their shift
-versus address-offset metadata. Two-table TBL keeps its group-register constraints.
+callbacks. Register-offset D loads and Q loads/stores stay in Python to validate
+shifts and prevent constant-offset rewriting. Register-post-index lane ST1 keeps its base
+writeback in the dataflow graph rather than declaring a constant increment.
+Two-table TBL keeps its group-register constraints.
 Family classes such as `Transpose`, `AESInstruction`, and `Fmov` remain in Python
 to preserve the inheritance relationships used by CPU models.
 
@@ -324,6 +326,39 @@ compare parsing, writing, memory metadata, and model queries on all eight
 AArch64 targets. Additional tests cover offset fixups, assembly of architectural
 forms, pre-/post-index execution, and a software-pipelined pair-load/replicate/
 pair-store loop executed with Unicorn on disjoint buffers.
+
+### FP32 subtraction and register-addressed SIMD memory
+
+`vsubf` accepts matching `.2s` and `.4s` FP32 arrangements. FP16, FP64,
+scalar and indexed subtraction are not part of this addition. The A520 model
+provides execution-unit, occupancy and latency entries; other targets do not
+gain FSUB timings automatically from the JSON declaration.
+
+Q-register LDR/STR accept `[Xbase, Xindex]` and explicit `lsl #0` or `lsl #4`.
+Both address registers are inputs, and neither is written back. The shift is
+not a byte offset: `pre_index` remains unset and offset adjustment is disabled.
+The existing shifted-LDR class name is retained, but invalid shifts are rejected
+and its old shift-as-byte-offset metadata is corrected.
+
+D-register LDR accepts `[Xbase, Xindex]` and explicit `lsl #0` or `lsl #3`,
+with the same two-input, no-writeback, non-adjustable address model. It requires
+`FEAT_FP`, writes the vector register (including clearing its upper half), and
+participates in load classification. W-index/extended addresses are not added.
+
+`st1 {Vn.d}[0], [Xbase], Xincrement` and lane `[1]` read the vector and
+increment register, and read/write the base. These forms do not change the
+vector or the increment register. They intentionally leave `increment` unset:
+that metadata is reserved for constant byte increments which Slothy can fold
+into other addresses. The explicit base dependency preserves dynamic writeback
+through reordering and software pipelining. Register-post-index byte, halfword,
+and word lane stores and W-index/extended Q addresses remain unsupported.
+
+The scalar JSON also defines register and immediate W-register CMP forms, with
+input GPRs and an output NZCV dependency. They are baseline A64 instructions;
+register allocation shares their architectural registers with the X forms, but
+the writer preserves 32-bit syntax. The existing X-form MADD definition names
+its two multiplicands first and its addend last; all three remain read inputs.
+The A520 model covers these compares, immediate LSL, and X-form MADD.
 
 ## ISA requirements and target capabilities
 
@@ -386,7 +421,7 @@ For example, FP MLA subclasses integer MLA for scheduling, and PMULL subclasses
 an AES family, but neither relationship establishes the ISA requirements.
 Missing requirements mean unclassified, even if the parent has metadata.
 
-All 146 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
+All 147 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
 forms, selected scalar arithmetic/FP forms, and handwritten FP-lane, TBL,
 forced-output FMOV, and forced-output INS forms. Other scalar and handwritten instructions
 remain unclassified. SQ(R)DMULH is baseline Advanced SIMD, not FEAT_RDM;

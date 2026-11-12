@@ -110,7 +110,7 @@ This is not a complete ISA or CPU timing reference. See
 | add_imm_shifted |  | AArch64ShiftedArithmetic |  |  | ["Xa"] |  | ["Xd"] | add &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm0&gt;, &lt;barrel&gt; &lt;imm1&gt; |  |  |  |  |
 | lsr_imm |  | AArch64Shift |  |  | ["Xa"] |  | ["Xd"] | lsr &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |
 | lsr |  | AArch64Shift |  |  | ["Xa","Xc"] |  | ["Xd"] | lsr &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xc&gt; |  |  |  |  |
-| lsl |  | AArch64Shift |  |  | ["Xa"] |  | ["Xd"] | lsl &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |
+| lsl |  | AArch64Shift |  |  | ["Xa"] |  | ["Xd"] | lsl &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm&gt; |  | [] |  |  |
 | ror |  | AArch64Shift |  |  | ["Xa"] |  | ["Xd"] | ror &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |
 | asr_imm |  | AArch64Shift |  |  | ["Xa"] |  | ["Xd"] | asr &lt;Xd&gt;, &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |
 | rev_w |  | AArch64Logical |  |  | ["Wa"] |  | ["Wd"] | rev &lt;Wd&gt;, &lt;Wa&gt; |  |  |  |  |
@@ -164,7 +164,7 @@ This is not a complete ISA or CPU timing reference. See
 | umulh_xform |  | AArch64HighMultiply |  |  | ["Xa","Xb"] |  | ["Xd"] | umulh &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
 | smulh_xform |  | AArch64HighMultiply |  |  | ["Xa","Xb"] |  | ["Xd"] | smulh &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
 | mul_xform |  | AArch64Multiply |  |  | ["Xa","Xb"] |  | ["Xd"] | mul &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  | [] |  |  |
-| madd_xform |  | AArch64Multiply |  |  | ["Xacc","Xa","Xb"] |  | ["Xd"] | madd &lt;Xd&gt;, &lt;Xacc&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
+| madd_xform |  | AArch64Multiply |  |  | ["Xa","Xb","Xacc"] |  | ["Xd"] | madd &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xb&gt;, &lt;Xacc&gt; |  | [] |  |  |
 | mneg_xform |  | AArch64Multiply |  |  | ["Xa","Xb"] |  | ["Xd"] | mneg &lt;Xd&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
 | msub_xform |  | AArch64Multiply |  |  | ["Xacc","Xa","Xb"] |  | ["Xd"] | msub &lt;Xd&gt;, &lt;Xacc&gt;, &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
 | and_imm_wform |  | AArch64Instruction |  |  | ["Wa"] |  | ["Wd"] | and &lt;Wd&gt;, &lt;Wa&gt;, &lt;imm&gt; |  |  |  |  |
@@ -172,6 +172,8 @@ This is not a complete ISA or CPU timing reference. See
 | tst_imm_xform |  | Tst |  |  | ["Xa"] | True |  | tst &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |
 | tst_xform |  | Tst |  |  | ["Xa","Xb"] | True |  | tst &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
 | cmp |  | Tst |  |  | ["Xa","Xb"] | True |  | cmp &lt;Xa&gt;, &lt;Xb&gt; |  |  |  |  |
+| cmp_wform |  | Tst |  |  | ["Wa","Wb"] | true |  | cmp &lt;Wa&gt;, &lt;Wb&gt; |  | [] |  |  |
+| cmp_imm_wform |  | Tst |  |  | ["Wa"] | true |  | cmp &lt;Wa&gt;, &lt;imm&gt; |  | [] |  |  |
 | cmp_xzr |  | Tst |  |  | ["Xa"] | True |  | cmp &lt;Xa&gt;, xzr |  |  |  |  |
 | cmp_xzr2 |  | Tst |  |  | [] | True |  | cmp xzr, xzr |  |  |  |  |
 | cmp_imm |  | Tst |  |  | ["Xa"] | True |  | cmp &lt;Xa&gt;, &lt;imm&gt; |  |  |  |  |

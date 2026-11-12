@@ -41,8 +41,9 @@ aarch64_neon_inst.md is a generated reference, not the source of truth.
 Handwritten definitions remain here when they need behavior not yet expressed
 by the JSON schema: signed-offset checks in q_ldur, FP lane validation,
 consecutive-register constraints in grouped loads/stores and two-table TBL,
-or parsing guards for forced-output variants. Register-offset Q loads also
-remain pending an audit of their shift versus address-offset metadata.
+or parsing guards for forced-output variants. Register-offset D loads and
+Q loads/stores validate shifts and disable constant-offset rewriting; register-post-index
+lane stores preserve dynamic base writeback as a read/write dependency.
 Instruction-family classes stay here to preserve the inheritance used by CPU
 models. Parsing/fusion callbacks stay in Python but can attach to JSON-generated
 classes, so a callback alone does not prevent migration.
@@ -779,7 +780,13 @@ class Instruction:
 
         # Operations on specific lanes are not counted as Q-form instructions
         if self._is_instance_of(
-            [Q_Ld2_Lane_Post_Inc, q_ld2_lane_s, st2_lane, st2_lane_post_inc]
+            [
+                Q_Ld2_Lane_Post_Inc,
+                q_ld2_lane_s,
+                st2_lane,
+                st2_lane_post_inc,
+                q_st1_lane_with_reg_postinc,
+            ]
         ):
             return False
 
@@ -796,7 +803,17 @@ class Instruction:
     def is_vector_load(self):
         """Indicates if an instruction is a Neon load instruction"""
         return self._is_instance_of(
-            [Ldr_Q, Ldp_Q, Ld2, Ld3, Ld4, Q_Ld2_Lane_Post_Inc, q_ld1_2, q_ld2_lane_s]
+            [
+                Ldr_D,
+                Ldr_Q,
+                Ldp_Q,
+                Ld2,
+                Ld3,
+                Ld4,
+                Q_Ld2_Lane_Post_Inc,
+                q_ld1_2,
+                q_ld2_lane_s,
+            ]
         )
 
     def is_vector_store(self):
@@ -1529,26 +1546,102 @@ class q_ldur(Ldr_Q):
         return super().write()
 
 
-class q_ldr_with_imm_shifted(Ldr_Q):
-    pattern = "ldr <Qa>, [<Xa>, <Xc>, <barrel> <imm>]"
-    inputs = ["Xa", "Xc"]
-    outputs = ["Qa"]
+class _VectorRegisterOffset:
+    """Register offsets are not byte immediates eligible for address fixup."""
+
+    register_offset_shift = 4
 
     @classmethod
     def make(cls, src):
         obj = AArch64Instruction.build(cls, src)
-        obj.increment = None
-        obj.pre_index = obj.immediate
-        obj.addr = obj.args_in[0]
+        obj._validate_shift()
+        obj.offset_adjustable = False
+        obj.addr = obj.args_in[obj.inputs.index("Xa")]
         return obj
 
+    def _validate_shift(self):
+        if self.barrel is not None and (
+            self.barrel.strip().lower() != "lsl"
+            or simplify(self.immediate) not in (0, self.register_offset_shift)
+        ):
+            raise ParsingException(
+                f"Register offsets require LSL #0 or #{self.register_offset_shift}"
+            )
+
     def write(self):
-        self.immediate = simplify(self.pre_index)
+        self._validate_shift()
         return super().write()
+
+
+class d_ldr_with_reg_offset(_VectorRegisterOffset, Ldr_D):
+    required_features = ["FEAT_FP"]
+    register_offset_shift = 3
+    pattern = "ldr <Da>, [<Xa>, <Xc>]"
+    inputs = ["Xa", "Xc"]
+    outputs = ["Da"]
+
+
+class d_ldr_with_reg_offset_shifted(_VectorRegisterOffset, Ldr_D):
+    required_features = ["FEAT_FP"]
+    register_offset_shift = 3
+    pattern = "ldr <Da>, [<Xa>, <Xc>, <barrel> <imm>]"
+    inputs = ["Xa", "Xc"]
+    outputs = ["Da"]
+
+
+class q_ldr_with_imm_shifted(_VectorRegisterOffset, Ldr_Q):
+    required_features = ["FEAT_FP"]
+    pattern = "ldr <Qa>, [<Xa>, <Xc>, <barrel> <imm>]"
+    inputs = ["Xa", "Xc"]
+    outputs = ["Qa"]
+
+
+class q_ldr_with_reg_offset(_VectorRegisterOffset, Ldr_Q):
+    required_features = ["FEAT_FP"]
+    pattern = "ldr <Qa>, [<Xa>, <Xc>]"
+    inputs = ["Xa", "Xc"]
+    outputs = ["Qa"]
 
 
 class Str_Q(AArch64Instruction):
     pass
+
+
+class q_str_with_reg_offset(_VectorRegisterOffset, Str_Q):
+    required_features = ["FEAT_FP"]
+    pattern = "str <Qa>, [<Xa>, <Xc>]"
+    inputs = ["Qa", "Xa", "Xc"]
+
+
+class q_str_with_reg_offset_shifted(_VectorRegisterOffset, Str_Q):
+    required_features = ["FEAT_FP"]
+    pattern = "str <Qa>, [<Xa>, <Xc>, <barrel> <imm>]"
+    inputs = ["Qa", "Xa", "Xc"]
+
+
+class q_st1_lane_with_reg_postinc(Str_Q):
+    required_features = ["FEAT_AdvSIMD"]
+    pattern = "st1 {<Va>.<dt>}[<index>], [<Xc>], <Xm>"
+    inputs = ["Va", "Xm"]
+    in_outs = ["Xc"]
+
+    @classmethod
+    def make(cls, src):
+        obj = AArch64Instruction.build(cls, src)
+        obj._validate_lane()
+        obj.addr = obj.args_in_out[0]
+        # Keep base writeback in the dataflow graph. `increment` is reserved
+        # for constant byte amounts that can be folded into other addresses.
+        obj.offset_adjustable = False
+        return obj
+
+    def _validate_lane(self):
+        if self.datatype.lower() != "d" or self.index not in (0, 1):
+            raise ParsingException("Register-post-index lane ST1 supports D[0/1]")
+
+    def write(self):
+        self._validate_lane()
+        return super().write()
 
 
 class Stp_Q(AArch64Instruction):

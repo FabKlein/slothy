@@ -68,7 +68,7 @@ class InstructionSpecTests(unittest.TestCase):
             {c["definition"] for c in cases}
             | {c["definition"] for c in second_batch}
             | {c["definition"] for c in memory_batch}
-            | {"fmov_w_to_s", "sfadd_d", "vfcmla"}
+            | {"fmov_w_to_s", "sfadd_d", "vfcmla", "vsubf"}
             | {"vqrdmulh_lane", "vqdmulh_lane", "vmul_lane", "vmla_lane", "vmls_lane"}
             | {
                 f"v{sign}{op}{upper}_lane"
