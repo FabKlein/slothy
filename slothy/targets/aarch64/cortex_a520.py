@@ -295,7 +295,8 @@ def add_further_constraints(slothy):
     # add_slot_constraints(slothy)
     # add_st_hazard(slothy)
     add_ld_hazard(slothy)
-    add_ld_st_hazard(slothy)
+    # Independent vector loads/stores have no blanket distance-two exclusion.
+    # Their execution resources and true data/address dependencies still apply.
 
 
 def add_slot_constraints(slothy):
@@ -315,19 +316,6 @@ def add_ld_hazard(slothy):
         return inst_a.inst.is_vector_load() and inst_b.inst.is_vector_load()
 
     for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_ld_pair):
-        if t0.is_locked and t1.is_locked:
-            continue
-        # print(t0, t1)
-        slothy._Add(t0.cycle_start_var != t1.cycle_start_var + 2)
-
-
-def add_ld_st_hazard(slothy):
-    def is_vec_ld_st_pair(inst_a, inst_b):
-        return (inst_a.inst.is_vector_load() and inst_b.inst.is_vector_store()) or (
-            inst_a.inst.is_vector_store() and inst_b.inst.is_vector_load()
-        )
-
-    for t0, t1 in slothy.get_inst_pairs(cond=is_vec_ld_st_pair):
         if t0.is_locked and t1.is_locked:
             continue
         # print(t0, t1)

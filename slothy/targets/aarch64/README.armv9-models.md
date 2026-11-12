@@ -81,7 +81,11 @@ a claim that hardware uses both physical pipes. New A320 memory entries
 reserve both scalar memory resources to represent its single LSU. A520 W-pair
 loads use the scalar load/store resource alternatives. Existing scalar/vector
 memory-resource pools are not fully unified; cross-pool contention remains an
-approximation. Existing A520 vector-memory hazard rules are retained.
+approximation. A520's vector load/load spacing rule is retained, but the blanket
+vector load/store distance-two exclusion is removed: independent loads and
+stores can be scheduled two cycles apart. Execution-resource occupancy and
+data/address dependencies, including the store-data gap below, still apply.
+This does not claim that all mixed memory streams are contention-free.
 
 Store data has no register result. The new store entries use a one-cycle
 base-update convention, not a claim about memory visibility/completion. Lane
@@ -148,9 +152,9 @@ arbitrary instructions with the same latency or throughput. MUL, FP arithmetic,
 loads, transfers, lane/pair/narrower stores, narrower ALU forms, and other CPUs are
 unchanged. Arithmetic dependencies remain three cycles, with one-cycle
 occupancy on either vector pipe. No general ST1/LDP spacing penalty or
-universal latency-plus-one rule is added. Existing vector-memory hazard rules
-are retained pending a separate audit; this
-refinement does not establish their accuracy.
+universal latency-plus-one rule is added. The remaining vector load/load hazard
+rule is retained pending a separate audit; this refinement does not establish
+its accuracy.
 
 For GPR/vector transfers, independent-stream rates are:
 

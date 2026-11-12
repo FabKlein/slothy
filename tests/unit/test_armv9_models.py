@@ -1,6 +1,6 @@
 """A320/A520 coverage derived from their own guides, plus model regressions."""
 
-from itertools import combinations
+from itertools import permutations
 from types import SimpleNamespace
 import shutil
 import subprocess
@@ -207,7 +207,7 @@ class Armv9ModelTests(unittest.TestCase):
                     constraints=SimpleNamespace(functional_only=False)
                 ),
                 get_inst_pairs=lambda cond: [
-                    p for p in combinations(nodes, 2) if cond(*p)
+                    p for p in permutations(nodes, 2) if cond(*p)
                 ],
                 _Add=model.Add,
             )
@@ -219,11 +219,27 @@ class Armv9ModelTests(unittest.TestCase):
             solver.parameters.max_time_in_seconds = 1
             return solver.Solve(model)
 
-        for texts in ((CASES[0][0], "ldr q4, [x3]"), (CASES[4][0], CASES[2][0])):
-            self.assertEqual(solve(cortex_a520, texts, 2), cp_model.INFEASIBLE)
-            self.assertIn(
-                solve(cortex_a520, texts, 3), (cp_model.OPTIMAL, cp_model.FEASIBLE)
-            )
+        texts = (CASES[0][0], "ldr q4, [x3]")
+        self.assertEqual(solve(cortex_a520, texts, 2), cp_model.INFEASIBLE)
+        self.assertIn(
+            solve(cortex_a520, texts, 3), (cp_model.OPTIMAL, cp_model.FEASIBLE)
+        )
+        # Independent load/store pairs may be two cycles apart in either order.
+        # Width, arrangement and encoding do not imply a universal spacing rule.
+        for load, store in (
+            ("ldp q0, q1, [x0], #32", "str q4, [x2], #16"),
+            ("ldp q0, q1, [x0], #32", "st1 {v4.4s}, [x2], #16"),
+            ("ldr q0, [x0]", "st1 {v4.8h}, [x2], #16"),
+            ("ldr q0, [x0]", "st1 {v4.16b}, [x2], #16"),
+            ("ldr d0, [x0]", "st1 {v4.2s}, [x2], #8"),
+            ("ld2 {v4.s, v5.s}[1], [x5]", CASES[2][0]),
+        ):
+            for texts in ((load, store), (store, load)):
+                with self.subTest(instructions=texts):
+                    self.assertIn(
+                        solve(cortex_a520, texts, 2),
+                        (cp_model.OPTIMAL, cp_model.FEASIBLE),
+                    )
         self.assertEqual(
             solve(cortex_a320, (CASES[2][0], "str q4, [x3]"), 1), cp_model.INFEASIBLE
         )
@@ -252,6 +268,37 @@ class Armv9ModelTests(unittest.TestCase):
                 core.config.selftest = False
                 core.config.timeout = 10
                 self.assertTrue(core.optimize(SourceLine.read_multiline(text)))
+
+    def test_a520_interleaved_vector_memory_schedule(self):
+        pairs = (0, 2, 4, 6, 16, 18, 20, 22)
+        for store in ("str q{}, [x2], #16", "st1 {{v{}.4s}}, [x2], #16"):
+            with self.subTest(store=store):
+                lines = []
+                for i, reg in enumerate(pairs):
+                    alu_reg = pairs[(i + 5) % len(pairs)]
+                    lines.extend(
+                        (
+                            store.format(reg),
+                            store.format(reg + 1),
+                            f"ldp q{reg}, q{reg + 1}, [x0], #32",
+                            f"bic v{alu_reg}.4s, #0x80, lsl #24",
+                            f"bic v{alu_reg + 1}.4s, #0x80, lsl #24",
+                        )
+                    )
+                core = SlothyBase(arch, cortex_a520)
+                core.config.inputs_are_outputs = True
+                core.config.constraints.allow_renaming = False
+                core.config.constraints.allow_reordering = False
+                core.config.variable_size = True
+                core.config.constraints.stalls_allowed = 80
+                core.config.selftest = False
+                core.config.timeout = 10
+                self.assertTrue(
+                    core.optimize(SourceLine.read_multiline("\n".join(lines)))
+                )
+                self.assertEqual(core.result.cycles, 25)
+                positions = core.result.cycle_position_with_bubbles
+                self.assertEqual([positions[i] for i in range(3)], [0, 1, 2])
 
     @unittest.skipUnless(
         shutil.which("clang-19") and shutil.which("llvm-objcopy-19"),
