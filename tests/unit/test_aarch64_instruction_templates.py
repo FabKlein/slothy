@@ -238,7 +238,7 @@ class InstructionTemplateTests(unittest.TestCase):
         names = {entry["name"] for entry in expected}
         self.assertEqual(
             {e["name"] for e in document["instructions"] if "template" in e},
-            names | {"vsubf"},
+            names | {"vsubf", "vmaxf", "vminf"},
         )
         actual = [e for e in arch._NEON_SPECS if e["name"] in names]
         self.assertEqual(actual, expected)

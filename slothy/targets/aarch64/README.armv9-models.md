@@ -50,6 +50,14 @@ vector operands. Two-table TBL accepts both 8B and 16B results with 16B tables.
 
 ## Timing and resource caveats
 
+FP32 vector FMAX/FMIN (`.2s` and `.4s`) use four-cycle latency from section
+3.17: A320 page 30 specifies one instruction/cycle; A520 page 35 specifies
+two instructions/cycle for 2x128. Occupancy is 1 on A320 VEC0 or on either
+A520 vector resource. These are guide-based normal-operation entries, not
+measurements of NaN handling or AH-dependent timing. Mixed-resource contention
+remains approximate. Operand order is preserved independently of these timings;
+see the ordered min/max contract in README.instructions.md.
+
 A520 covers register/immediate W-register CMP and immediate X-register LSL
 with one-cycle latency and one-cycle occupancy on either scalar ALU. These
 use the basic SUBS alias in section 3.3 (page 13) and the immediate LSL/UBFM

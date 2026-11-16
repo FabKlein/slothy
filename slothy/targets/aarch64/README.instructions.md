@@ -3,11 +3,12 @@
 Simple instruction definitions are generated from two JSON files:
 
 - `aarch64_scalar_instructions.json`: scalar instructions (175 definitions).
-- `aarch64_neon_instructions.json`: 147 definitions (143 migrated plus four new),
-  including vector FADD/FMUL, FP32 FSUB, arithmetic, logical, shuffle, shift forms,
+- `aarch64_neon_instructions.json`: 149 definitions (143 migrated plus six new),
+  including vector FADD/FMUL, FP32 FSUB/FMAX/FMIN, arithmetic, logical, shuffle, shift forms,
   and 17 register-restricted integer by-element forms. The added definitions are
   `fmov_w_to_s` (`fmov Sd,Wn`), `sfadd_d` (`fadd Dd,Da,Db`), and `vfcmla`
-  (FP16/FP32 vector FCMLA), plus `vsubf` (FP32 vector FSUB).
+  (FP16/FP32 vector FCMLA), plus `vsubf`, `vmaxf` and `vminf` (FP32 vector
+  subtraction and min/max).
   The second migration batch adds 28 existing declarations: TRN1/TRN2,
   AES/PMULL and AES wrapper pseudo-instructions, comparisons, UADDLV,
   GPR/vector transfers, and NOP. No instruction timings change in this migration.
@@ -360,6 +361,29 @@ the writer preserves 32-bit syntax. The existing X-form MADD definition names
 its two multiplicands first and its addend last; all three remain read inputs.
 The A520 model covers these compares, immediate LSL, and X-form MADD.
 
+### Ordered FP32 min/max
+
+`vmaxf` and `vminf` accept matching `.2s` and `.4s` vector arrangements and
+require Advanced SIMD. They use the binary arithmetic template with ordered
+inputs: architectural Vn first, Vm second. Register renaming changes register
+names, not operand positions. There is no source commutation, reassociation,
+or replacement by `FMAXNM`/`FMINNM`.
+
+Operand order matters: when `FPCR.AH=1`, a NaN input or a tie between two zeros
+selects the second source element, preserving its result bits. See the
+[Arm architecture clarification, section 2.175](https://documentation-service.arm.com/static/644c18cbaa78c007af74fa2c#page=131).
+Do not infer commutativity even with AH cleared: NaN payload selection can also
+depend on source order. FP16, FP64, scalar, pairwise, reduction, and NM forms
+are not added here. Both A320 and A520 have explicit timings.
+
+Use a fixed FPCR and nontrapping exceptions for the optimized block. This
+addition does not model FPCR/FPSR register dependencies or exception trap order.
+`test_aarch64_fp_minmax.py` checks ordered sources through scheduling and actual
+software-pipeline overlap with a result-bit reference model for AH=0/1 and
+DN=0/1, including NaNs and signed zeros. Unicorn execution separately checks
+AH=0, including cleared upper lanes for `.2s`. The AH=1 execution test explicitly
+skips when the installed emulator masks off AH; reference-model tests still run.
+
 ## ISA requirements and target capabilities
 
 ISA support and scheduling support are independent. An instruction may parse
@@ -421,7 +445,7 @@ For example, FP MLA subclasses integer MLA for scheduling, and PMULL subclasses
 an AES family, but neither relationship establishes the ISA requirements.
 Missing requirements mean unclassified, even if the parent has metadata.
 
-All 147 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
+All 149 JSON NEON definitions have explicit ISA requirements, as do scalar CRC32
 forms, selected scalar arithmetic/FP forms, and handwritten FP-lane, TBL,
 forced-output FMOV, and forced-output INS forms. Other scalar and handwritten instructions
 remain unclassified. SQ(R)DMULH is baseline Advanced SIMD, not FEAT_RDM;

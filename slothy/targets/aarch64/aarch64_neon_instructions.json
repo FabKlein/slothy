@@ -300,6 +300,20 @@
       "operand_values": {"dt": ["2s", "4s"]}
     },
     {
+      "name": "vmaxf",
+      "_comment": "Keep the two sources in architectural Vn,Vm order. With FPCR.AH=1, NaNs and zero ties select Vm; sharing this template does not authorize commutation or reassociation.",
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "fmax",
+      "operand_values": {"dt": ["2s", "4s"]}
+    },
+    {
+      "name": "vminf",
+      "_comment": "FMIN has the same source-order requirement as FMAX, including FPCR.AH=1. Do not replace it with FMINNM.",
+      "template": "neon_arithmetic_binary",
+      "mnemonic": "fmin",
+      "operand_values": {"dt": ["2s", "4s"]}
+    },
+    {
       "name": "vsub",
       "template": "neon_arithmetic_binary",
       "mnemonic": "sub"

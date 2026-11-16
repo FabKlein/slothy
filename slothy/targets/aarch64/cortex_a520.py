@@ -111,6 +111,8 @@ from slothy.targets.aarch64.aarch64_neon import (
     vadd,
     vaddf,
     vsubf,
+    vmaxf,
+    vminf,
     vxtn,
     vshrn,
     vusra,
@@ -430,6 +432,7 @@ def _integer_alu_store_data_latency(src, out_idx, dst):
 
 execution_units = {
     vfcmla: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
+    (vmaxf, vminf): [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     (mul_xform, madd_xform): ExecutionUnit.SCALAR_MUL(),
     sfadd_d: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
     FMOV_GPR_TO_VEC: [ExecutionUnit.VEC0, ExecutionUnit.VEC1],
@@ -657,6 +660,7 @@ execution_units = {
 
 inverse_throughput = {
     vfcmla: 1,
+    (vmaxf, vminf): 1,
     (mul_xform, madd_xform): 2,
     sfadd_d: 1,
     (_SCALAR_ADDITIONS + _CRC + _TRANSFERS + (vushl_reg, mov_vtov_d, Ldp_W, Stp_W)): 1,
@@ -753,6 +757,7 @@ inverse_throughput = {
 
 default_latencies = {
     vfcmla: 4,
+    (vmaxf, vminf): 4,
     (mul_xform, madd_xform, sfadd_d): 4,
     _SCALAR_ADDITIONS: 1,
     _CRC: 2,
